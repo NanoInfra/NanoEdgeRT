@@ -1,4 +1,30 @@
 {
-  "services": [],
-  "functions": []
+  "available_port_start": 8001,
+  "available_port_end": 8999,
+  "services": [
+    {
+      "name": "hello",
+      "enable": true,
+      "jwt_check": false,
+      "permissions": {
+        "read": [],
+        "write": [],
+        "env": [],
+        "run": []
+      }
+    },
+    {
+      "name": "calculator",
+      "enable": true,
+      "jwt_check": false,
+      "permissions": {
+        "read": [],
+        "write": [],
+        "env": [],
+        "run": []
+      }
+    }
+  ],
+  "jwt_secret": "change-me-in-production",
+  "main_port": 8000
 }

@@ -1,7 +1,10 @@
+// 类型定义文件
 export interface Config {
   available_port_start: number;
   available_port_end: number;
   services: ServiceConfig[];
+  jwt_secret?: string;
+  main_port?: number;
 }
 
 export interface ServiceConfig {
@@ -20,4 +23,19 @@ export interface ServiceConfig {
     env: string[];
     run: string[];
   };
+}
+
+export interface ServiceInstance {
+  config: ServiceConfig;
+  worker?: Worker;
+  port: number;
+  status: "starting" | "running" | "stopped" | "error";
+}
+
+export interface RequestContext {
+  serviceName: string;
+  path: string;
+  request: Request;
+  authenticated?: boolean;
+  user?: any;
 }
