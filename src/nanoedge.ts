@@ -152,7 +152,7 @@ export class NanoEdgeRT {
     request: Request,
   ): Promise<Response> {
     try {
-      const serviceUrl = `http://127.0.0.1:${service.port}${new URL(request.url).pathname}${
+      const serviceUrl = `http://0.0.0.0:${service.port}${new URL(request.url).pathname}${
         new URL(request.url).search
       }`;
 

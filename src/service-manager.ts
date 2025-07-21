@@ -112,7 +112,7 @@ self.onmessage = async (event) => {
       
       Deno.serve({
         port,
-        hostname: "127.0.0.1",
+        hostname: "0.0.0.0",
         signal: ____AC.signal,
       }, __handler_rewriter);
       
@@ -164,7 +164,7 @@ self.onmessage = async (event) => {
         deno: {
           permissions: {
             ...serviceConfig.permissions,
-            net: ["127.0.0.1"],
+            net: ["0.0.0.0"],
           },
         },
       });
