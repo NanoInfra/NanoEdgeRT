@@ -33,7 +33,7 @@ export class SwaggerGenerator {
   private config: Config;
   private baseUrl: string;
 
-  constructor(config: Config, baseUrl: string = "http://0.0.0.0:8000") {
+  constructor(config: Config, baseUrl: string = "http://127.0.0.1:8000") {
     this.config = config;
     this.baseUrl = baseUrl;
   }

@@ -1,4 +1,7 @@
 {
+  "name": "nanoedgert",
+  "version": "1.0.0",
+  "description": "A lightweight, high-performance edge function runtime built with Deno",
   "imports": {
     "hono": "https://esm.sh/hono@4.8.5"
   },

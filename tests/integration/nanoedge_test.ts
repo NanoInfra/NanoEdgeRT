@@ -46,13 +46,13 @@ Deno.test({
         assertEquals(welcomeData.message, "Welcome to NanoEdgeRT");
         assertEquals(Array.isArray(welcomeData.services), true);
 
-        // Test Swagger documentation
-        const docsResponse = await fetch("http://0.0.0.0:9000/docs");
+        // Test Swagger documentation (localhost only)
+        const docsResponse = await fetch("http://127.0.0.1:9000/docs");
         assertEquals(docsResponse.status, 200);
         assertEquals(docsResponse.headers.get("content-type"), "text/html");
 
-        // Test OpenAPI spec
-        const openapiResponse = await fetch("http://0.0.0.0:9000/openapi.json");
+        // Test OpenAPI spec (localhost only)
+        const openapiResponse = await fetch("http://127.0.0.1:9000/openapi.json");
         assertEquals(openapiResponse.status, 200);
         assertEquals(openapiResponse.headers.get("content-type"), "application/json");
 

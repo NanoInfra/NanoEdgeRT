@@ -82,8 +82,8 @@ Deno.test({
 Deno.test({
   name: "E2E - Admin endpoints should require authentication",
   async fn() {
-    // Test without authentication
-    const response = await fetch("http://0.0.0.0:8000/_admin/services");
+    // Test without authentication from localhost (should get 401)
+    const response = await fetch("http://127.0.0.1:8000/_admin/services");
 
     if (response.status === 404) {
       console.log("Skipping E2E test - server not running");
@@ -125,12 +125,12 @@ Deno.test({
     assertEquals(welcomeData.message, "Welcome to NanoEdgeRT");
     assertEquals(Array.isArray(welcomeData.services), true);
 
-    // Test documentation endpoints
-    const docsResponse = await fetch("http://0.0.0.0:8000/docs");
+    // Test documentation endpoints (only accessible from localhost)
+    const docsResponse = await fetch("http://127.0.0.1:8000/docs");
     assertEquals(docsResponse.status, 200);
     assertEquals(docsResponse.headers.get("content-type"), "text/html");
 
-    const openapiResponse = await fetch("http://0.0.0.0:8000/openapi.json");
+    const openapiResponse = await fetch("http://127.0.0.1:8000/openapi.json");
     assertEquals(openapiResponse.status, 200);
     assertEquals(openapiResponse.headers.get("content-type"), "application/json");
   },

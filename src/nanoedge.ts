@@ -3,6 +3,7 @@ import { ServiceManager } from "./service-manager.ts";
 import { AuthMiddleware } from "./auth.ts";
 import { loadConfig } from "./config.ts";
 import { SwaggerGenerator } from "./swagger.ts";
+import { generateAdminUI } from "./admin-ui.ts";
 
 export class NanoEdgeRT {
   private config: Config;
@@ -19,7 +20,7 @@ export class NanoEdgeRT {
     );
     this.authMiddleware = authMiddleware;
     this.abortController = new AbortController();
-    const baseUrl = `http://0.0.0.0:${config.main_port || 8000}`;
+    const baseUrl = `http://127.0.0.1:${config.main_port || 8000}`;
     this.swaggerGenerator = new SwaggerGenerator(config, baseUrl);
   }
 
@@ -76,6 +77,22 @@ export class NanoEdgeRT {
 
     // Swagger documentation endpoints
     if (url.pathname === "/docs" || url.pathname === "/swagger") {
+      // Check if request is targeting localhost interface
+      const host = request.headers.get("host") || url.host;
+
+      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
+        return new Response(
+          JSON.stringify({
+            error: "Documentation endpoints only accessible via localhost",
+            hint: "Try http://127.0.0.1:8000/docs instead",
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
       return new Response(this.swaggerGenerator.generateSwaggerHTML(), {
         status: 200,
         headers: { "Content-Type": "text/html" },
@@ -83,10 +100,53 @@ export class NanoEdgeRT {
     }
 
     if (url.pathname === "/openapi.json") {
+      // Check if request is targeting localhost interface
+      const host = request.headers.get("host") || url.host;
+
+      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
+        return new Response(
+          JSON.stringify({
+            error: "OpenAPI spec only accessible via localhost",
+            hint: "Try http://127.0.0.1:8000/openapi.json instead",
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
       return new Response(JSON.stringify(this.swaggerGenerator.generateOpenAPISpec(), null, 2), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Admin UI interface (localhost only)
+    if (url.pathname === "/admin" || url.pathname === "/admin/") {
+      // Check if request is targeting localhost interface
+      const host = request.headers.get("host") || url.host;
+
+      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
+        return new Response(
+          JSON.stringify({
+            error: "Admin UI only accessible via localhost",
+            hint: "Try http://127.0.0.1:8000/admin instead",
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      return new Response(
+        await generateAdminUI(this.getAllServicesWithStatus(), this.config.jwt_secret!),
+        {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        },
+      );
     }
 
     // Admin API endpoints
@@ -195,6 +255,22 @@ export class NanoEdgeRT {
   }
 
   private async handleAdminRequest(request: Request, pathSegments: string[]): Promise<Response> {
+    // Check if request is targeting localhost interface
+    const host = request.headers.get("host") || new URL(request.url).host;
+
+    if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
+      return new Response(
+        JSON.stringify({
+          error: "Admin endpoints only accessible via localhost",
+          hint: "Try http://127.0.0.1:8000/_admin/ instead",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // Basic auth check for admin endpoints
     const authResult = await this.authMiddleware.authenticate(request);
     if (!authResult.authenticated) {
@@ -267,5 +343,31 @@ export class NanoEdgeRT {
         headers: { "Content-Type": "application/json" },
       },
     );
+  }
+
+  private getAllServicesWithStatus() {
+    // Get all running services
+    const runningServices = this.serviceManager.getAllServices();
+    const runningServiceNames = new Set(runningServices.map((s) => s.config.name));
+
+    // Create a list that includes all configured services
+    const allServices = this.config.services.map((serviceConfig) => {
+      const runningService = runningServices.find((s) => s.config.name === serviceConfig.name);
+
+      if (runningService) {
+        // Service is running, return its current state
+        return runningService;
+      } else {
+        // Service is stopped, create a stopped service instance
+        return {
+          config: serviceConfig,
+          status: "stopped" as const,
+          port: null as number | null,
+          worker: null,
+        };
+      }
+    });
+
+    return allServices;
   }
 }
