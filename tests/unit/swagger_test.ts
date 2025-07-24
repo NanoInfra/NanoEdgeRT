@@ -34,7 +34,7 @@ Deno.test("SwaggerGenerator - should generate valid OpenAPI spec", () => {
     ],
   };
 
-  const generator = new SwaggerGenerator(config);
+  const generator = new SwaggerGenerator(config, "http://0.0.0.0:8000");
   const spec = generator.generateOpenAPISpec();
 
   assertEquals(spec.openapi, "3.0.3");
@@ -42,7 +42,7 @@ Deno.test("SwaggerGenerator - should generate valid OpenAPI spec", () => {
   assertExists(spec.info.version);
   assertExists(spec.servers);
   assertEquals(spec.servers.length, 1);
-  assertEquals(spec.servers[0].url, "http://127.0.0.1:8000");
+  assertEquals(spec.servers[0].url, "http://0.0.0.0:8000");
 });
 
 Deno.test("SwaggerGenerator - should include system endpoints", () => {

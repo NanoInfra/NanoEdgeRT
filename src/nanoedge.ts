@@ -1,9 +1,11 @@
 import { Config } from "./types.ts";
 import { ServiceManager } from "./service-manager.ts";
 import { AuthMiddleware } from "./auth.ts";
-import { loadConfig } from "./config.ts";
+import { DatabaseConfig, databaseConfig } from "./database-config.ts";
+import { initializeDatabase } from "../database/sqlite3.ts";
 import { SwaggerGenerator } from "./swagger.ts";
 import { generateAdminUI } from "./admin-ui.ts";
+import { dynamicAPI } from "./dynamic-api.ts";
 
 export class NanoEdgeRT {
   private config: Config;
@@ -11,8 +13,9 @@ export class NanoEdgeRT {
   private authMiddleware: AuthMiddleware;
   private abortController: AbortController;
   private swaggerGenerator: SwaggerGenerator;
+  private dbConfig: DatabaseConfig;
 
-  private constructor(config: Config, authMiddleware: AuthMiddleware) {
+  private constructor(config: Config, authMiddleware: AuthMiddleware, dbConfig: DatabaseConfig) {
     this.config = config;
     this.serviceManager = new ServiceManager(
       config.available_port_start,
@@ -22,12 +25,22 @@ export class NanoEdgeRT {
     this.abortController = new AbortController();
     const baseUrl = `http://127.0.0.1:${config.main_port || 8000}`;
     this.swaggerGenerator = new SwaggerGenerator(config, baseUrl);
+    this.dbConfig = dbConfig;
   }
 
-  static async create(configPath?: string): Promise<NanoEdgeRT> {
-    const config = await loadConfig(configPath);
+  static async create(customDbConfig?: DatabaseConfig): Promise<NanoEdgeRT> {
+    // Initialize database first (use custom if provided)
+    if (customDbConfig) {
+      // Database already initialized by the custom config
+    } else {
+      await initializeDatabase();
+    }
+
+    // Load config from database (use custom if provided)
+    const dbConfigInstance = customDbConfig || databaseConfig;
+    const config = await dbConfigInstance.loadConfig();
     const authMiddleware = await AuthMiddleware.create(config.jwt_secret!);
-    return new NanoEdgeRT(config, authMiddleware);
+    return new NanoEdgeRT(config, authMiddleware, dbConfigInstance);
   }
 
   async start(): Promise<void> {
@@ -212,7 +225,7 @@ export class NanoEdgeRT {
     request: Request,
   ): Promise<Response> {
     try {
-      const serviceUrl = `http://0.0.0.0:${service.port}${new URL(request.url).pathname}${
+      const serviceUrl = `http://127.0.0.1:${service.port}${new URL(request.url).pathname}${
         new URL(request.url).search
       }`;
 
@@ -277,7 +290,15 @@ export class NanoEdgeRT {
       return this.authMiddleware.createUnauthorizedResponse();
     }
 
-    const [action, serviceName] = pathSegments;
+    const [action, ...remainingPath] = pathSegments;
+
+    // Handle Dynamic API under _admin/api
+    if (action === "api") {
+      return dynamicAPI.handleAPIRequest(request, remainingPath);
+    }
+
+    // Legacy admin endpoints for existing services
+    const serviceName = remainingPath[0];
 
     switch (action) {
       case "services":
@@ -348,7 +369,6 @@ export class NanoEdgeRT {
   private getAllServicesWithStatus() {
     // Get all running services
     const runningServices = this.serviceManager.getAllServices();
-    const runningServiceNames = new Set(runningServices.map((s) => s.config.name));
 
     // Create a list that includes all configured services
     const allServices = this.config.services.map((serviceConfig) => {

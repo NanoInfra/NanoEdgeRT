@@ -22,10 +22,10 @@ export interface OpenAPISpec {
     url: string;
     description: string;
   }>;
-  paths: Record<string, any>;
+  paths: Record<string, unknown>;
   components: {
-    schemas: Record<string, any>;
-    securitySchemes: Record<string, any>;
+    schemas: Record<string, unknown>;
+    securitySchemes: Record<string, unknown>;
   };
 }
 
@@ -75,8 +75,8 @@ export class SwaggerGenerator {
     };
   }
 
-  private generatePaths(): Record<string, any> {
-    const paths: Record<string, any> = {};
+  private generatePaths(): Record<string, unknown> {
+    const paths: Record<string, unknown> = {};
 
     // Health check endpoint
     paths["/health"] = {
@@ -428,7 +428,7 @@ export class SwaggerGenerator {
     return paths;
   }
 
-  private generateSchemas(): Record<string, any> {
+  private generateSchemas(): Record<string, unknown> {
     return {
       HealthResponse: {
         type: "object",

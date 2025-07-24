@@ -5,7 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2025-07-24
+
+### Added
+
+- 🆕 **Dynamic API** - performing
+  - add CRUD operations for services
+  - upload single js file for service creation
+  - on-the-fly service creation
+- 🚙 **Single Executable** - Add tasks to compile deno into single executable
+  - Cross-platform compilation support (Windows, Linux, macOS)
+  - Compile tasks for all target platforms
+- 📦 **Proper Configuration** - using Kysely instead of `config.json`
+- 🔄 **Service Management** - use Kysely databases for managing service files instead of folder and config.json
+- 🗄️ **SQLite Database** - Integrated SQLite database with Kysely ORM for persistent storage
+- 🔄 **CI/CD Improvements** - Updated GitHub Actions workflow with better Deno setup
+
+### Changed
+
+- 📈 **Version Bump** - Updated project version to 1.1.0 in deno.json
+- 🔧 **Dependencies** - Replaced Hono with Kysely for database operations
+- 📝 **Typo Fix** - Fixed "CURD" to "CRUD" operations
+
+### Removed
+
+- ❌ **CLI** - Removed CLI interface in favor of dynamic API for service management
+- 🗂️ **Legacy Config** - Removed file-based configuration system
 
 ## [1.0.0] - 2025-07-22
 

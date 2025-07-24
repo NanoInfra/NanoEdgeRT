@@ -25,41 +25,17 @@ export class ServiceManager {
     this.usedPorts.delete(port);
   }
 
-  async buildService(serviceConfig: ServiceConfig): Promise<void> {
-    if (!serviceConfig.build_command) return;
-
-    const servicePath = serviceConfig.path || `./nanoedge/services/${serviceConfig.name}`;
-
-    console.log(`Building service ${serviceConfig.name}...`);
-
-    const command = new Deno.Command("sh", {
-      args: ["-c", serviceConfig.build_command],
-      cwd: servicePath,
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-
-    const child = command.spawn();
-    const result = await child.status;
-
-    if (!result.success) {
-      throw new Error(`Failed to build service ${serviceConfig.name}`);
-    }
-  }
+  // Build service method removed - no file-based services supported
 
   async startService(serviceConfig: ServiceConfig): Promise<void> {
     if (this.services.has(serviceConfig.name)) {
       console.log(`Service ${serviceConfig.name} already running`);
       return;
     }
-
+    const _ = await 1;
     const port = this.getAvailablePort();
-    const servicePath = serviceConfig.path || `./nanoedge/services/${serviceConfig.name}`;
 
     try {
-      // Build the service if needed
-      await this.buildService(serviceConfig);
-
       const serviceInstance: ServiceInstance = {
         config: serviceConfig,
         port,
@@ -68,9 +44,35 @@ export class ServiceManager {
 
       this.services.set(serviceConfig.name, serviceInstance);
 
-      // Create worker adapter code
+      // Services must have code from database - no file-based services
+      if (!serviceConfig.code) {
+        throw new Error("Service code is required - file-based services are not supported");
+      }
+
+      const serviceCode = serviceConfig.code;
+
+      // Create worker adapter code that safely executes the database-stored code
       const workerAdapterCode = `
+// User service code (from database)
+${serviceCode}
+
 let __handler;
+
+// Try to find the handler function from the executed code
+if (typeof defaultExport !== 'undefined') {
+  __handler = defaultExport;
+} else if (typeof handler !== 'undefined') {
+  __handler = handler;
+} else if (typeof main !== 'undefined') {
+  __handler = main;
+} else {
+  throw new Error('No handler function found. Please export a function named "handler", "main", or use "defaultExport".');
+}
+
+if (typeof __handler !== 'function') {
+  throw new Error('Handler must be a function');
+}
+
 const __handler_rewriter = async (req) => {
   const url = new URL(req.url);
   const pathSegments = url.pathname.split("/").filter(s => s);
@@ -81,9 +83,9 @@ const __handler_rewriter = async (req) => {
   }
   
   const newPath = "/" + pathSegments.join("/");
-  const rewritedUrl = "http://${serviceConfig.name}" + newPath + url.search;
+  const rewrittenUrl = "http://${serviceConfig.name}" + newPath + url.search;
   
-  const newReq = new Request(rewritedUrl, {
+  const newReq = new Request(rewrittenUrl, {
     method: req.method,
     headers: req.headers,
     body: req.body,
@@ -95,100 +97,79 @@ const __handler_rewriter = async (req) => {
 
 const ____AC = new AbortController();
 
+// Handle server startup
+(async () => {
+  try {
+    console.log("Starting service ${serviceConfig.name} on port ${port}");
+    
+    await Deno.serve({
+      port: ${port},
+      signal: ____AC.signal,
+    }, async (req) => {
+      try {
+        return await __handler_rewriter(req);
+      } catch (error) {
+        console.error("Request error:", error);
+        return new Response(
+          JSON.stringify({ error: error.message || String(error) }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }).finished;
+  } catch (error) {
+    self.postMessage({
+      type: "startup_error",
+      error: error.message || String(error),
+    });
+  }
+})();
+
 self.onmessage = async (event) => {
   if (event.data === "stop") {
     console.log("Stopping ${serviceConfig.name}");
     ____AC.abort();
     self.close();
-  } else {
-    const { port } = event.data;
-    try {
-      const __handlerModule = await import(import.meta.url);
-      __handler = __handlerModule.default || __handlerModule.handler;
-      
-      if (!__handler) {
-        throw new Error("No default export or handler function found");
-      }
-      
-      Deno.serve({
-        port,
-        hostname: "0.0.0.0",
-        signal: ____AC.signal,
-      }, __handler_rewriter);
-      
-      console.log(\`Service ${serviceConfig.name} started on port \${port}\`);
-    } catch (error) {
-      console.error(\`Failed to start service ${serviceConfig.name}:\`, error);
-      self.postMessage({ type: 'error', error: error.message });
-    }
+    return;
   }
 };
 `;
 
-      // Read the compiled service code
-      const mainFilePath = `${servicePath}/index.js`;
-      let serviceCode: string;
-
-      try {
-        serviceCode = await Deno.readTextFile(mainFilePath);
-      } catch {
-        // If no compiled file, try TypeScript
-        const tsPath = `${servicePath}/index.ts`;
-        try {
-          // Compile TypeScript to JavaScript
-          const command = new Deno.Command(Deno.execPath(), {
-            args: ["bundle", tsPath],
-            stdout: "piped",
-            stderr: "piped",
-          });
-
-          const child = command.spawn();
-          const output = await child.output();
-
-          if (!output.success) {
-            throw new Error(`Failed to compile ${tsPath}`);
-          }
-
-          serviceCode = new TextDecoder().decode(output.stdout);
-        } catch {
-          throw new Error(`No service file found at ${mainFilePath} or ${tsPath}`);
-        }
-      }
-
-      // Create worker
-      const fullWorkerCode = serviceCode + workerAdapterCode;
-      const blob = new Blob([fullWorkerCode], { type: "application/javascript" });
-
-      const worker = new Worker(URL.createObjectURL(blob), {
-        type: "module",
-        deno: {
-          permissions: {
-            ...serviceConfig.permissions,
-            net: ["0.0.0.0"],
+      // Create worker with appropriate permissions
+      const worker = new Worker(
+        URL.createObjectURL(new Blob([workerAdapterCode], { type: "application/javascript" })),
+        {
+          type: "module",
+          deno: {
+            permissions: {
+              net: true,
+              read: serviceConfig.permissions?.read || [],
+              write: serviceConfig.permissions?.write || [],
+              env: serviceConfig.permissions?.env || [],
+              run: serviceConfig.permissions?.run || [],
+            },
           },
         },
-      });
+      );
 
-      worker.onmessage = (event) => {
-        if (event.data.type === "error") {
-          console.error(`Worker error for ${serviceConfig.name}:`, event.data.error);
+      worker.addEventListener("message", (event) => {
+        if (event.data.type === "startup_error") {
+          console.error(`Service ${serviceConfig.name} startup error:`, event.data.error);
           serviceInstance.status = "error";
         }
-      };
+      });
 
-      worker.onerror = (error) => {
+      worker.addEventListener("error", (error) => {
         console.error(`Worker error for ${serviceConfig.name}:`, error);
         serviceInstance.status = "error";
-      };
+        this.releasePort(port);
+      });
 
       serviceInstance.worker = worker;
       serviceInstance.status = "running";
 
-      // Start the worker
-      worker.postMessage({ port });
-
-      console.log(`Started service ${serviceConfig.name} on port ${port}`);
+      console.log(`✅ Service ${serviceConfig.name} started on port ${port}`);
     } catch (error) {
+      console.error(`Failed to start service ${serviceConfig.name}:`, error);
       this.releasePort(port);
       this.services.delete(serviceConfig.name);
       throw error;

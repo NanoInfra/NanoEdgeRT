@@ -7,6 +7,13 @@ export interface Config {
   main_port?: number;
 }
 
+export interface ServicePermissions {
+  read: string[];
+  write: string[];
+  env: string[];
+  run: string[];
+}
+
 export interface ServiceConfig {
   name: string;
   path?: string;
@@ -17,12 +24,9 @@ export interface ServiceConfig {
   // pwd is the service path
   build_command?: string;
   // deno worker permissions
-  permissions: {
-    read: string[];
-    write: string[];
-    env: string[];
-    run: string[];
-  };
+  permissions: ServicePermissions;
+  // service code (for database-stored services)
+  code?: string;
 }
 
 export interface ServiceInstance {
@@ -37,5 +41,5 @@ export interface RequestContext {
   path: string;
   request: Request;
   authenticated?: boolean;
-  user?: any;
+  user?: Record<string, unknown>;
 }

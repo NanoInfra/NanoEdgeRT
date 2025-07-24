@@ -3,10 +3,8 @@
 import { NanoEdgeRT } from "./src/nanoedge.ts";
 
 async function main() {
-  const configPath = Deno.args[0] || "./nanoedge/config.json";
-
   try {
-    const nanoEdge = await NanoEdgeRT.create(configPath);
+    const nanoEdge = await NanoEdgeRT.create();
 
     // Handle graceful shutdown
     const handleShutdown = () => {

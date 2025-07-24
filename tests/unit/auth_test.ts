@@ -1,6 +1,6 @@
 import { assertEquals } from "../test_utils.ts";
 import { AuthMiddleware } from "../../src/auth.ts";
-import { create, verify } from "https://deno.land/x/djwt@v2.9.1/mod.ts";
+import { create } from "https://deno.land/x/djwt@v2.9.1/mod.ts";
 
 Deno.test("AuthMiddleware - should create instance successfully", async () => {
   const authMiddleware = await AuthMiddleware.create("test-secret");

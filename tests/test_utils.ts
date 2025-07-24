@@ -23,7 +23,7 @@ export function createTestServer(port: number = 8000): {
 
   return {
     url: `http://0.0.0.0:${port}`,
-    start: async () => {
+    start: () => {
       abortController = new AbortController();
       // Server implementation would go here
     },
@@ -64,8 +64,8 @@ export function createMockRequest(url: string, options: RequestInit = {}): Reque
 export async function assertJsonResponse(
   response: Response,
   expectedStatus: number = 200,
-  expectedData?: any,
-): Promise<any> {
+  expectedData?: unknown,
+): Promise<unknown> {
   assertEquals(response.status, expectedStatus);
   assertEquals(response.headers.get("content-type"), "application/json");
 

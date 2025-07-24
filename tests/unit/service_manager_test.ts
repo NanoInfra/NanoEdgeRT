@@ -1,6 +1,5 @@
 import { assertEquals } from "../test_utils.ts";
 import { ServiceManager } from "../../src/service-manager.ts";
-import { ServiceConfig } from "../../src/types.ts";
 
 Deno.test("ServiceManager - should initialize with correct port range", () => {
   const manager = new ServiceManager(8001, 8999);

@@ -49,6 +49,7 @@ Deno.bench("Swagger spec generation performance", () => {
 
 Deno.bench("JWT token creation", async () => {
   const authMiddleware = await AuthMiddleware.create("test-secret-for-benchmarking");
+  console.log(authMiddleware);
   // Benchmark would include token creation if we exposed that method
 });
 
