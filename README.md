@@ -1,8 +1,6 @@
 # 🔬 NanoEdgeRT 📏
 
-[![CI](https://github.com/yourusername/NanoEdgeRT/workflows/CI/badge.svg)](https://github.com/yourusername/NanoEdgeRT/actions)
-[![Tests](https://img.shields.io/badge/tests-26%20passed-brightgreen?style=flat-square)](https://github.com/yourusername/NanoEdgeRT/actions)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/yourusername/NanoEdgeRT/actions)
+[![CI](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml/badge.svg)](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml)
 [![Deno](https://img.shields.io/badge/Deno-000000?style=for-the-badge&logo=deno&logoColor=white)](https://deno.land/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
