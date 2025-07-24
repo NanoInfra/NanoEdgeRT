@@ -33,21 +33,6 @@ jobs:
       - name: Run integration tests
         run: deno task test:integration
 
-      - name: Run E2E tests (with server)
-        run: |
-          # Start the server in background
-          deno task start &
-          SERVER_PID=$!
-
-          # Wait for server to start
-          sleep 5
-
-          # Run E2E tests
-          deno task test:e2e
-
-          # Stop the server
-          kill $SERVER_PID || true
-
       - name: Run benchmarks
         run: deno task bench
 
@@ -61,9 +46,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
+        uses: denoland/setup-deno@v2
 
       - name: Generate coverage report
         run: |

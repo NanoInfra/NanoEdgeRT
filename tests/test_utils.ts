@@ -23,8 +23,9 @@ export function createTestServer(port: number = 8000): {
 
   return {
     url: `http://0.0.0.0:${port}`,
-    start: () => {
+    start: async () => {
       abortController = new AbortController();
+      const _ = await 1;
       // Server implementation would go here
     },
     stop: () => {

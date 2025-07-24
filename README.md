@@ -38,9 +38,9 @@ graph TB
     JWT -->|Invalid| Error[401 Unauthorized]
     
     Router --> Health["/health"]
-    Router --> AdminUI["/admin 🎨"]
+    Router --> AdminUI["/admin"]
     Router --> Docs["/docs /swagger"]
-    Router --> AdminAPI["/_admin/* 🔧"]
+    Router --> AdminAPI["/_admin/*"]
     Router --> Services[Service Routes]
     
     AdminUI -->|127.0.0.1 Only| Dashboard[Modern Dashboard UI]
@@ -242,8 +242,8 @@ The admin interface implements **defense-in-depth** security:
 graph LR
     User[User] --> Browser[Browser]
     Browser --> Check{Host Check}
-    Check -->|127.0.0.1| Allow[✅ Admin UI]
-    Check -->|0.0.0.0| Deny[❌ 403 Forbidden]
+    Check -->|127.0.0.1| Allow[Admin UI]
+    Check -->|0.0.0.0| Deny[403 Forbidden]
     Allow --> JWT[JWT Required for Actions]
     JWT --> Actions[Service Control]
 ```

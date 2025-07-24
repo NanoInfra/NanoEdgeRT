@@ -92,8 +92,8 @@ Deno.test("SwaggerGenerator - should include service endpoints", () => {
   assertExists(spec.paths["/test-service/{proxy+}"]);
 
   // Check that both GET and POST methods are included
-  assertExists(spec.paths["/test-service"].get);
-  assertExists(spec.paths["/test-service"].post);
+  assertExists((spec.paths["/test-service"] as { get: unknown }).get);
+  assertExists((spec.paths["/test-service"] as { post: unknown }).post);
 });
 
 Deno.test("SwaggerGenerator - should handle JWT-protected services", () => {
@@ -121,8 +121,12 @@ Deno.test("SwaggerGenerator - should handle JWT-protected services", () => {
 
   // Check that JWT security is applied to protected services
   const serviceEndpoint = spec.paths["/protected-service"];
-  assertExists(serviceEndpoint.get.security);
-  assertEquals(serviceEndpoint.get.security[0].BearerAuth, []);
+  assertExists(((serviceEndpoint as { get: unknown }).get as { security: unknown[] }).security);
+  assertEquals(
+    ((serviceEndpoint as { get: unknown }).get as { security: { BearerAuth: unknown[] }[] })
+      .security[0].BearerAuth,
+    [],
+  );
 });
 
 Deno.test("SwaggerGenerator - should generate valid HTML", () => {
