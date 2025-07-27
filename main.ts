@@ -15,7 +15,6 @@ async function main() {
 
     // Listen for shutdown signals
     Deno.addSignalListener("SIGINT", handleShutdown);
-    Deno.addSignalListener("SIGTERM", handleShutdown);
 
     await nanoEdge.start();
   } catch (error) {
