@@ -1,28 +1,14 @@
 import { ServiceConfig, ServiceInstance } from "./types.ts";
+import { allocatePort, releasePort, getServicePort } from "../database/sqlite3.ts";
+import type { Kysely } from "kysely";
+import type { Database } from "../database/sqlite3.ts";
 
 export class ServiceManager {
   private services: Map<string, ServiceInstance> = new Map();
-  private usedPorts: Set<number> = new Set();
-  private portStart: number;
-  private portEnd: number;
+  private dbInstance?: Kysely<Database>;
 
-  constructor(portStart: number, portEnd: number) {
-    this.portStart = portStart;
-    this.portEnd = portEnd;
-  }
-
-  private getAvailablePort(): number {
-    for (let port = this.portStart; port <= this.portEnd; port++) {
-      if (!this.usedPorts.has(port)) {
-        this.usedPorts.add(port);
-        return port;
-      }
-    }
-    throw new Error("No available ports");
-  }
-
-  private releasePort(port: number): void {
-    this.usedPorts.delete(port);
+  constructor(dbInstance?: Kysely<Database>) {
+    this.dbInstance = dbInstance;
   }
 
   // Build service method removed - no file-based services supported
@@ -32,10 +18,16 @@ export class ServiceManager {
       console.log(`Service ${serviceConfig.name} already running`);
       return;
     }
-    const _ = await 1;
-    const port = this.getAvailablePort();
 
     try {
+      // Check if service already has an allocated port
+      let port = await getServicePort(serviceConfig.name, this.dbInstance);
+      
+      // If no port allocated, allocate a new one
+      if (!port) {
+        port = await allocatePort(serviceConfig.name, this.dbInstance);
+      }
+
       const serviceInstance: ServiceInstance = {
         config: serviceConfig,
         port,
@@ -158,10 +150,10 @@ self.onmessage = async (event) => {
         }
       });
 
-      worker.addEventListener("error", (error) => {
+      worker.addEventListener("error", async (error) => {
         console.error(`Worker error for ${serviceConfig.name}:`, error);
         serviceInstance.status = "error";
-        this.releasePort(port);
+        await releasePort(serviceConfig.name, this.dbInstance);
       });
 
       serviceInstance.worker = worker;
@@ -170,13 +162,13 @@ self.onmessage = async (event) => {
       console.log(`✅ Service ${serviceConfig.name} started on port ${port}`);
     } catch (error) {
       console.error(`Failed to start service ${serviceConfig.name}:`, error);
-      this.releasePort(port);
+      await releasePort(serviceConfig.name, this.dbInstance);
       this.services.delete(serviceConfig.name);
       throw error;
     }
   }
 
-  stopService(serviceName: string): void {
+  async stopService(serviceName: string): Promise<void> {
     const service = this.services.get(serviceName);
     if (!service) {
       console.log(`Service ${serviceName} not found`);
@@ -188,15 +180,15 @@ self.onmessage = async (event) => {
       service.worker.terminate();
     }
 
-    this.releasePort(service.port);
+    await releasePort(serviceName, this.dbInstance);
     this.services.delete(serviceName);
     console.log(`Stopped service ${serviceName}`);
   }
 
-  stopAllServices(): void {
+  async stopAllServices(): Promise<void> {
     const serviceNames = Array.from(this.services.keys());
     for (const name of serviceNames) {
-      this.stopService(name);
+      await this.stopService(name);
     }
   }
 

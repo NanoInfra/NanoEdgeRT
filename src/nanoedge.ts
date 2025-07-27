@@ -21,10 +21,7 @@ export class NanoEdgeRT {
 
   private constructor(config: Config, authMiddleware: AuthMiddleware, dbConfig: DatabaseConfig) {
     this.config = config;
-    this.serviceManager = new ServiceManager(
-      config.available_port_start,
-      config.available_port_end,
-    );
+    this.serviceManager = new ServiceManager(dbConfig.getDbInstance());
     this.authMiddleware = authMiddleware;
     this.abortController = new AbortController();
     this.app = new OpenAPIHono();
@@ -234,10 +231,10 @@ export class NanoEdgeRT {
       }
     });
 
-    this.app.post("/_admin/stop/:serviceName", checkLocalhost, checkAuth, (c) => {
+    this.app.post("/_admin/stop/:serviceName", checkLocalhost, checkAuth, async (c) => {
       const serviceName = c.req.param("serviceName");
       try {
-        this.serviceManager.stopService(serviceName);
+        await this.serviceManager.stopService(serviceName);
         return c.json({ message: `Service ${serviceName} stopped` });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -249,7 +246,9 @@ export class NanoEdgeRT {
   stop(): void {
     console.log("🛑 Stopping NanoEdgeRT...");
     this.abortController.abort();
-    this.serviceManager.stopAllServices();
+    // Note: stopAllServices is now async, but we can't await in stop()
+    // Consider making this async in the future
+    this.serviceManager.stopAllServices().catch(console.error);
     console.log("✅ NanoEdgeRT stopped");
   }
 

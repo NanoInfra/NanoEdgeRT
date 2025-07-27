@@ -1,11 +1,12 @@
 import { db } from "../database/sqlite3.ts";
 import { Config, ServiceConfig, ServicePermissions } from "./types.ts";
 import { Kysely } from "kysely";
-import type { ConfigTable, ServiceTable } from "../database/sqlite3.ts";
+import type { ConfigTable, ServiceTable, PortTable } from "../database/sqlite3.ts";
 
 interface Database {
   services: ServiceTable;
   config: ConfigTable;
+  ports: PortTable;
 }
 
 export class DatabaseConfig {
@@ -27,6 +28,10 @@ export class DatabaseConfig {
   // Create a new instance with custom database (for testing)
   static createInstance(dbInstance: Kysely<Database>): DatabaseConfig {
     return new DatabaseConfig(dbInstance);
+  }
+
+  getDbInstance(): Kysely<Database> {
+    return this.dbInstance;
   }
 
   async loadConfig(): Promise<Config> {

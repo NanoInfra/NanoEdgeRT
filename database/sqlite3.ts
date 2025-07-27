@@ -10,6 +10,7 @@ export interface ServiceTable {
   enabled: boolean;
   jwt_check: boolean;
   permissions: string; // JSON string
+  port?: number; // Allocated port for the service
   created_at?: string;
   updated_at?: string;
 }
@@ -21,9 +22,17 @@ export interface ConfigTable {
   updated_at?: string;
 }
 
+export interface PortTable {
+  port: number;
+  service_name?: string; // null if available, service name if allocated
+  allocated_at?: string;
+  released_at?: string;
+}
+
 export interface Database {
   services: ServiceTable;
   config: ConfigTable;
+  ports: PortTable;
 }
 
 // Default database for production
@@ -60,6 +69,7 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
       "text",
       (col) => col.notNull().defaultTo('{"read":[],"write":[],"env":[],"run":[]}'),
     )
+    .addColumn("port", "integer") // Allocated port for the service
     .addColumn("created_at", "text", (col) => col.notNull())
     .addColumn("updated_at", "text", (col) => col.notNull())
     .execute();
@@ -72,6 +82,16 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
     .addColumn("value", "text", (col) => col.notNull())
     .addColumn("created_at", "text", (col) => col.notNull())
     .addColumn("updated_at", "text", (col) => col.notNull())
+    .execute();
+
+  // Create ports table for port allocation tracking
+  await dbInstance.schema
+    .createTable("ports")
+    .ifNotExists()
+    .addColumn("port", "integer", (col) => col.primaryKey())
+    .addColumn("service_name", "text") // null if available, service name if allocated
+    .addColumn("allocated_at", "text")
+    .addColumn("released_at", "text")
     .execute();
 
   // Insert default config values if they don't exist
@@ -100,6 +120,55 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
         })
         .execute();
     }
+  }
+
+  // Initialize ports table with available ports if empty
+  const existingPorts = await dbInstance
+    .selectFrom("ports")
+    .select("port")
+    .executeTakeFirst();
+
+  if (!existingPorts) {
+    console.log("🌱 Initializing ports table...");
+    
+    // Get port range from config
+    const portStartConfig = await dbInstance
+      .selectFrom("config")
+      .select("value")
+      .where("key", "=", "available_port_start")
+      .executeTakeFirst();
+    
+    const portEndConfig = await dbInstance
+      .selectFrom("config")
+      .select("value")
+      .where("key", "=", "available_port_end")
+      .executeTakeFirst();
+
+    const portStart = parseInt(portStartConfig?.value || "8001");
+    const portEnd = parseInt(portEndConfig?.value || "8999");
+
+    // Insert all available ports
+    const portInserts = [];
+    for (let port = portStart; port <= portEnd; port++) {
+      portInserts.push({
+        port,
+        service_name: undefined,
+        allocated_at: undefined,
+        released_at: undefined,
+      });
+    }
+
+    // Insert ports in batches to avoid potential issues with large ranges
+    const batchSize = 100;
+    for (let i = 0; i < portInserts.length; i += batchSize) {
+      const batch = portInserts.slice(i, i + batchSize);
+      await dbInstance
+        .insertInto("ports")
+        .values(batch)
+        .execute();
+    }
+
+    console.log(`✅ Initialized ${portInserts.length} available ports (${portStart}-${portEnd})`);
   }
 
   // Add default services if none exist
@@ -210,6 +279,100 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
   }
 
   console.log("✅ Database initialized");
+}
+
+// Port allocation functions
+export async function allocatePort(serviceName: string, dbInstance: Kysely<Database> = db): Promise<number> {
+  // Find an available port
+  const availablePort = await dbInstance
+    .selectFrom("ports")
+    .select("port")
+    .where("service_name", "is", null)
+    .orderBy("port", "asc")
+    .executeTakeFirst();
+
+  if (!availablePort) {
+    throw new Error("No available ports");
+  }
+
+  // Allocate the port to the service
+  await dbInstance
+    .updateTable("ports")
+    .set({
+      service_name: serviceName,
+      allocated_at: new Date().toISOString(),
+      released_at: undefined,
+    })
+    .where("port", "=", availablePort.port)
+    .execute();
+
+  // Update the service record with the allocated port
+  await dbInstance
+    .updateTable("services")
+    .set({
+      port: availablePort.port,
+      updated_at: new Date().toISOString(),
+    })
+    .where("name", "=", serviceName)
+    .execute();
+
+  return availablePort.port;
+}
+
+export async function releasePort(serviceName: string, dbInstance: Kysely<Database> = db): Promise<void> {
+  // Get the port number for the service
+  const service = await dbInstance
+    .selectFrom("services")
+    .select("port")
+    .where("name", "=", serviceName)
+    .executeTakeFirst();
+
+  if (service?.port) {
+    // Release the port
+    await dbInstance
+      .updateTable("ports")
+      .set({
+        service_name: undefined,
+        allocated_at: undefined,
+        released_at: new Date().toISOString(),
+      })
+      .where("port", "=", service.port)
+      .execute();
+
+    // Remove port from service record
+    await dbInstance
+      .updateTable("services")
+      .set({
+        port: undefined,
+        updated_at: new Date().toISOString(),
+      })
+      .where("name", "=", serviceName)
+      .execute();
+  }
+}
+
+export async function getServicePort(serviceName: string, dbInstance: Kysely<Database> = db): Promise<number | null> {
+  const service = await dbInstance
+    .selectFrom("services")
+    .select("port")
+    .where("name", "=", serviceName)
+    .executeTakeFirst();
+
+  return service?.port || null;
+}
+
+export async function getAllocatedPorts(dbInstance: Kysely<Database> = db): Promise<{ port: number; serviceName: string; allocatedAt: string }[]> {
+  const ports = await dbInstance
+    .selectFrom("ports")
+    .select(["port", "service_name", "allocated_at"])
+    .where("service_name", "is not", null)
+    .execute();
+
+  return ports.map(p => ({
+    port: p.port,
+    serviceName: p.service_name!,
+    allocatedAt: p.allocated_at!,
+  }));
 }
 
 export const DB = db;
