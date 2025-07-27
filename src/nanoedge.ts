@@ -1,9 +1,13 @@
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { swaggerUI } from "@hono/swagger-ui";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import type { Context, Next } from "hono";
 import { Config } from "./types.ts";
 import { ServiceManager } from "./service-manager.ts";
 import { AuthMiddleware } from "./auth.ts";
 import { DatabaseConfig, databaseConfig } from "./database-config.ts";
 import { initializeDatabase } from "../database/sqlite3.ts";
-import { SwaggerGenerator } from "./swagger.ts";
 import { generateAdminUI } from "./admin-ui.ts";
 import { dynamicAPI } from "./dynamic-api.ts";
 
@@ -12,7 +16,7 @@ export class NanoEdgeRT {
   private serviceManager: ServiceManager;
   private authMiddleware: AuthMiddleware;
   private abortController: AbortController;
-  private swaggerGenerator: SwaggerGenerator;
+  private app: OpenAPIHono;
   private dbConfig: DatabaseConfig;
 
   private constructor(config: Config, authMiddleware: AuthMiddleware, dbConfig: DatabaseConfig) {
@@ -23,9 +27,9 @@ export class NanoEdgeRT {
     );
     this.authMiddleware = authMiddleware;
     this.abortController = new AbortController();
-    const baseUrl = `http://127.0.0.1:${config.main_port || 8000}`;
-    this.swaggerGenerator = new SwaggerGenerator(config, baseUrl);
+    this.app = new OpenAPIHono();
     this.dbConfig = dbConfig;
+    this.setupRoutes();
   }
 
   static async create(customDbConfig?: DatabaseConfig): Promise<NanoEdgeRT> {
@@ -67,9 +71,179 @@ export class NanoEdgeRT {
       port,
       hostname: "0.0.0.0",
       signal: this.abortController.signal,
-    }, this.handleRequest.bind(this));
+    }, this.app.fetch);
 
     console.log(`✅ NanoEdgeRT server running on port ${port}`);
+  }
+
+  private setupRoutes(): void {
+    // Add middleware
+    this.app.use("*", cors());
+    this.app.use("*", logger());
+
+    // Setup OpenAPI info
+    this.app.doc("/openapi.json", {
+      openapi: "3.0.0",
+      info: {
+        version: "1.0.0",
+        title: "NanoEdgeRT API",
+        description: "A lightweight edge function runtime for Deno",
+      },
+      servers: [
+        {
+          url: `http://127.0.0.1:${this.config.main_port || 8000}`,
+          description: "Development server",
+        },
+      ],
+    });
+
+    // Setup Swagger UI
+    this.app.get("/docs", swaggerUI({ url: "/openapi.json" }));
+    this.app.get("/swagger", swaggerUI({ url: "/openapi.json" }));
+
+    // Health check route
+    this.app.get("/health", (c) => {
+      const services = this.serviceManager.getAllServices();
+      const health = {
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        services: services.map((service) => ({
+          name: service.config.name,
+          status: service.status,
+          port: service.port,
+        })),
+      };
+      return c.json(health);
+    });
+
+    // Admin UI route (localhost only)
+    this.app.get("/admin", async (c) => {
+      const host = c.req.header("host") || "";
+      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
+        return c.json({
+          error: "Admin UI only accessible via localhost",
+          hint: "Try http://127.0.0.1:8000/admin instead",
+        }, 403);
+      }
+
+      const html = await generateAdminUI(this.getAllServicesWithStatus(), this.config.jwt_secret!);
+      return c.html(html);
+    });
+
+    this.app.get("/admin/", async (c) => {
+      const host = c.req.header("host") || "";
+      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
+        return c.json({
+          error: "Admin UI only accessible via localhost",
+          hint: "Try http://127.0.0.1:8000/admin instead",
+        }, 403);
+      }
+
+      const html = await generateAdminUI(this.getAllServicesWithStatus(), this.config.jwt_secret!);
+      return c.html(html);
+    });
+
+    // Setup admin routes
+    this.setupAdminRoutes();
+
+    // Root route
+    this.app.get("/", (c) => {
+      return c.json({
+        message: "Welcome to NanoEdgeRT",
+        services: this.serviceManager.getAllServices().map((s) => ({
+          name: s.config.name,
+          status: s.status,
+          port: s.port,
+        })),
+      });
+    });
+
+    // Service forwarding routes
+    this.app.all("/:serviceName/*", async (c) => {
+      const serviceName = c.req.param("serviceName");
+      const service = this.serviceManager.getService(serviceName);
+
+      if (!service) {
+        return c.json({ error: `Service '${serviceName}' not found` }, 404);
+      }
+
+      if (service.status !== "running") {
+        return c.json({ error: `Service '${serviceName}' is not running` }, 503);
+      }
+
+      // JWT authentication check
+      if (service.config.jwt_check) {
+        const authResult = await this.authMiddleware.authenticate(c.req.raw);
+        if (!authResult.authenticated) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+      }
+
+      // Forward request to service
+      return this.forwardToService(service, c.req.raw);
+    });
+  }
+
+  private setupAdminRoutes(): void {
+    // Middleware to check localhost access for admin routes
+    const checkLocalhost = async (c: Context, next: Next) => {
+      const host = c.req.header("host") || "";
+      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
+        return c.json({
+          error: "Admin endpoints only accessible via localhost",
+          hint: "Try http://127.0.0.1:8000/_admin/ instead",
+        }, 403);
+      }
+      await next();
+    };
+
+    // Middleware to check authentication for admin routes
+    const checkAuth = async (c: Context, next: Next) => {
+      const authResult = await this.authMiddleware.authenticate(c.req.raw);
+      if (!authResult.authenticated) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+      await next();
+    };
+
+    // Dynamic API routes
+    this.app.all("/_admin/api/*", checkLocalhost, checkAuth, (c) => {
+      const path = c.req.path.replace("/_admin/api", "").split("/").filter((s: string) => s);
+      return dynamicAPI.handleAPIRequest(c.req.raw, path);
+    });
+
+    // Services management routes
+    this.app.get("/_admin/services", checkLocalhost, checkAuth, (c) => {
+      return c.json(this.serviceManager.getAllServices());
+    });
+
+    this.app.post("/_admin/start/:serviceName", checkLocalhost, checkAuth, async (c) => {
+      const serviceName = c.req.param("serviceName");
+      const serviceConfig = this.config.services.find((s) => s.name === serviceName);
+
+      if (!serviceConfig) {
+        return c.json({ error: "Service not found in config" }, 404);
+      }
+
+      try {
+        await this.serviceManager.startService(serviceConfig);
+        return c.json({ message: `Service ${serviceName} started` });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return c.json({ error: errorMessage }, 500);
+      }
+    });
+
+    this.app.post("/_admin/stop/:serviceName", checkLocalhost, checkAuth, (c) => {
+      const serviceName = c.req.param("serviceName");
+      try {
+        this.serviceManager.stopService(serviceName);
+        return c.json({ message: `Service ${serviceName} stopped` });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return c.json({ error: errorMessage }, 500);
+      }
+    });
   }
 
   stop(): void {
@@ -77,147 +251,6 @@ export class NanoEdgeRT {
     this.abortController.abort();
     this.serviceManager.stopAllServices();
     console.log("✅ NanoEdgeRT stopped");
-  }
-
-  private async handleRequest(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    const pathSegments = url.pathname.split("/").filter((s) => s);
-
-    // Health check endpoint
-    if (url.pathname === "/health") {
-      return this.handleHealthCheck();
-    }
-
-    // Swagger documentation endpoints
-    if (url.pathname === "/docs" || url.pathname === "/swagger") {
-      // Check if request is targeting localhost interface
-      const host = request.headers.get("host") || url.host;
-
-      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
-        return new Response(
-          JSON.stringify({
-            error: "Documentation endpoints only accessible via localhost",
-            hint: "Try http://127.0.0.1:8000/docs instead",
-          }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      return new Response(this.swaggerGenerator.generateSwaggerHTML(), {
-        status: 200,
-        headers: { "Content-Type": "text/html" },
-      });
-    }
-
-    if (url.pathname === "/openapi.json") {
-      // Check if request is targeting localhost interface
-      const host = request.headers.get("host") || url.host;
-
-      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
-        return new Response(
-          JSON.stringify({
-            error: "OpenAPI spec only accessible via localhost",
-            hint: "Try http://127.0.0.1:8000/openapi.json instead",
-          }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      return new Response(JSON.stringify(this.swaggerGenerator.generateOpenAPISpec(), null, 2), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Admin UI interface (localhost only)
-    if (url.pathname === "/admin" || url.pathname === "/admin/") {
-      // Check if request is targeting localhost interface
-      const host = request.headers.get("host") || url.host;
-
-      if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
-        return new Response(
-          JSON.stringify({
-            error: "Admin UI only accessible via localhost",
-            hint: "Try http://127.0.0.1:8000/admin instead",
-          }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      return new Response(
-        await generateAdminUI(this.getAllServicesWithStatus(), this.config.jwt_secret!),
-        {
-          status: 200,
-          headers: { "Content-Type": "text/html" },
-        },
-      );
-    }
-
-    // Admin API endpoints
-    if (pathSegments[0] === "_admin") {
-      return this.handleAdminRequest(request, pathSegments.slice(1));
-    }
-
-    // Service request
-    if (pathSegments.length === 0) {
-      return new Response(
-        JSON.stringify({
-          message: "Welcome to NanoEdgeRT",
-          services: this.serviceManager.getAllServices().map((s) => ({
-            name: s.config.name,
-            status: s.status,
-            port: s.port,
-          })),
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    const serviceName = pathSegments[0];
-    const service = this.serviceManager.getService(serviceName);
-
-    if (!service) {
-      return new Response(
-        JSON.stringify({ error: `Service '${serviceName}' not found` }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    if (service.status !== "running") {
-      return new Response(
-        JSON.stringify({ error: `Service '${serviceName}' is not running` }),
-        {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // JWT authentication check
-    if (service.config.jwt_check) {
-      const authResult = await this.authMiddleware.authenticate(request);
-      if (!authResult.authenticated) {
-        return this.authMiddleware.createUnauthorizedResponse();
-      }
-    }
-
-    // Forward request to service
-    return this.forwardToService(service, request);
   }
 
   private async forwardToService(
@@ -247,123 +280,6 @@ export class NanoEdgeRT {
         },
       );
     }
-  }
-
-  private handleHealthCheck(): Response {
-    const services = this.serviceManager.getAllServices();
-    const health = {
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      services: services.map((service) => ({
-        name: service.config.name,
-        status: service.status,
-        port: service.port,
-      })),
-    };
-
-    return new Response(JSON.stringify(health), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  private async handleAdminRequest(request: Request, pathSegments: string[]): Promise<Response> {
-    // Check if request is targeting localhost interface
-    const host = request.headers.get("host") || new URL(request.url).host;
-
-    if (!host.startsWith("127.0.0.1") && !host.startsWith("localhost")) {
-      return new Response(
-        JSON.stringify({
-          error: "Admin endpoints only accessible via localhost",
-          hint: "Try http://127.0.0.1:8000/_admin/ instead",
-        }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Basic auth check for admin endpoints
-    const authResult = await this.authMiddleware.authenticate(request);
-    if (!authResult.authenticated) {
-      return this.authMiddleware.createUnauthorizedResponse();
-    }
-
-    const [action, ...remainingPath] = pathSegments;
-
-    // Handle Dynamic API under _admin/api
-    if (action === "api") {
-      return dynamicAPI.handleAPIRequest(request, remainingPath);
-    }
-
-    // Legacy admin endpoints for existing services
-    const serviceName = remainingPath[0];
-
-    switch (action) {
-      case "services":
-        if (request.method === "GET") {
-          return new Response(
-            JSON.stringify(this.serviceManager.getAllServices()),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            },
-          );
-        }
-        break;
-
-      case "start":
-        if (request.method === "POST" && serviceName) {
-          const serviceConfig = this.config.services.find((s) => s.name === serviceName);
-          if (!serviceConfig) {
-            return new Response(
-              JSON.stringify({ error: "Service not found in config" }),
-              { status: 404, headers: { "Content-Type": "application/json" } },
-            );
-          }
-          try {
-            await this.serviceManager.startService(serviceConfig);
-            return new Response(
-              JSON.stringify({ message: `Service ${serviceName} started` }),
-              { status: 200, headers: { "Content-Type": "application/json" } },
-            );
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            return new Response(
-              JSON.stringify({ error: errorMessage }),
-              { status: 500, headers: { "Content-Type": "application/json" } },
-            );
-          }
-        }
-        break;
-
-      case "stop":
-        if (request.method === "POST" && serviceName) {
-          try {
-            this.serviceManager.stopService(serviceName);
-            return new Response(
-              JSON.stringify({ message: `Service ${serviceName} stopped` }),
-              { status: 200, headers: { "Content-Type": "application/json" } },
-            );
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            return new Response(
-              JSON.stringify({ error: errorMessage }),
-              { status: 500, headers: { "Content-Type": "application/json" } },
-            );
-          }
-        }
-        break;
-    }
-
-    return new Response(
-      JSON.stringify({ error: "Invalid admin request" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
   }
 
   private getAllServicesWithStatus() {
