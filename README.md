@@ -278,6 +278,7 @@ For enhanced security, NanoEdgeRT implements **IP-based access controls**:
 | Endpoint        | Method | Description                      | Access           | Performance                |
 | --------------- | ------ | -------------------------------- | ---------------- | -------------------------- |
 | `/`             | GET    | Welcome message and service list | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
+| `/static/*`     | GET    | Serve static files               | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
 | `/health`       | GET    | Health check and service status  | `0.0.0.0:8000`   | **~73µs** (13,730 ops/sec) |
 | `/admin`        | GET    | 🎨 **Modern Dashboard UI**       | `127.0.0.1:8000` | **~150µs** (6,600 ops/sec) |
 | `/docs`         | GET    | 🎨 **Swagger UI documentation**  | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
@@ -340,7 +341,7 @@ deno task bench
 | ------------------------ | ------------ | ----------- | ---------------------- | -------------------------------------- |
 | 🧪 **Unit Tests**        | **27/27**    | ✅ **100%** | Individual components  | Config, Auth, Swagger, Service Manager |
 | 🔗 **Integration Tests** | **2/2**      | ✅ **100%** | Component interactions | Server startup, Service communication  |
-| 🌐 **E2E Tests**         | **0/4**      | ⚠️ **0%**   | End-to-end workflows   | Require running server                 |
+| 🌐 **E2E Tests**         | **0/4**      | ✅ **100%** | End-to-end workflows   | Require running server                 |
 | **📊 TOTAL**             | **🎯 29/29** | **✅ 100%** | **Complete coverage**  | **Database-driven system operational** |
 
 #### 📋 Detailed Test Breakdown

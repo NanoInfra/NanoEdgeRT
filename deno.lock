@@ -1,22 +1,87 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@cliffy/ansi@1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/ansi@^1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/command@^1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/flags@1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/internal@1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/keycode@1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/prompt@^1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/table@1.0.0-rc.8": "1.0.0-rc.8",
+    "jsr:@cliffy/table@^1.0.0-rc.8": "1.0.0-rc.8",
     "jsr:@db/sqlite@*": "0.12.0",
     "jsr:@denosaurs/plug@1": "1.1.0",
     "jsr:@soapbox/kysely-deno-sqlite@*": "2.2.0",
     "jsr:@std/assert@0.217": "0.217.0",
+    "jsr:@std/assert@~1.0.6": "1.0.13",
     "jsr:@std/encoding@1": "1.0.10",
+    "jsr:@std/encoding@~1.0.5": "1.0.10",
     "jsr:@std/fmt@1": "1.0.8",
+    "jsr:@std/fmt@~1.0.2": "1.0.8",
     "jsr:@std/fs@1": "1.0.19",
     "jsr:@std/internal@^1.0.9": "1.0.10",
+    "jsr:@std/io@~0.224.9": "0.224.9",
     "jsr:@std/path@0.217": "0.217.0",
     "jsr:@std/path@1": "1.1.1",
     "jsr:@std/path@^1.1.1": "1.1.1",
+    "jsr:@std/path@~1.0.6": "1.0.9",
+    "jsr:@std/text@~1.0.7": "1.0.15",
     "npm:@types/node@*": "22.15.15",
     "npm:kysely@~0.27.2": "0.27.6",
     "npm:pg-pool@*": "3.10.1_pg@8.16.3"
   },
   "jsr": {
+    "@cliffy/ansi@1.0.0-rc.8": {
+      "integrity": "ba37f10ce55bbfbdd8ddd987f91f029b17bce88385b98ba3058870f3b007b80c",
+      "dependencies": [
+        "jsr:@cliffy/internal",
+        "jsr:@std/encoding@~1.0.5",
+        "jsr:@std/fmt@~1.0.2",
+        "jsr:@std/io"
+      ]
+    },
+    "@cliffy/command@1.0.0-rc.8": {
+      "integrity": "758147790797c74a707e5294cc7285df665422a13d2a483437092ffce40b5557",
+      "dependencies": [
+        "jsr:@cliffy/flags",
+        "jsr:@cliffy/internal",
+        "jsr:@cliffy/table@1.0.0-rc.8",
+        "jsr:@std/fmt@~1.0.2",
+        "jsr:@std/text"
+      ]
+    },
+    "@cliffy/flags@1.0.0-rc.8": {
+      "integrity": "0f1043ce6ef037ba1cb5fe6b1bcecb25dc2f29371a1c17f278ab0f45e4b6f46c",
+      "dependencies": [
+        "jsr:@std/text"
+      ]
+    },
+    "@cliffy/internal@1.0.0-rc.8": {
+      "integrity": "34cdf2fad9b084b5aed493b138d573f52d4e988767215f7460daf0b918ff43d8"
+    },
+    "@cliffy/keycode@1.0.0-rc.8": {
+      "integrity": "76dbf85a67ec0aea2e29ca049b8507b6b3f62a2a971bd744d8d3fc447c177cd9"
+    },
+    "@cliffy/prompt@1.0.0-rc.8": {
+      "integrity": "eba403ea1d47b9971bf2210fa35f4dc7ebd2aba87beec9540ae47552806e2f25",
+      "dependencies": [
+        "jsr:@cliffy/ansi@1.0.0-rc.8",
+        "jsr:@cliffy/internal",
+        "jsr:@cliffy/keycode",
+        "jsr:@std/assert@~1.0.6",
+        "jsr:@std/fmt@~1.0.2",
+        "jsr:@std/io",
+        "jsr:@std/path@~1.0.6",
+        "jsr:@std/text"
+      ]
+    },
+    "@cliffy/table@1.0.0-rc.8": {
+      "integrity": "8bbcdc2ba5e0061b4b13810a24e6f5c6ab19c09f0cce9eb691ccd76c7c6c9db5",
+      "dependencies": [
+        "jsr:@std/fmt@~1.0.2"
+      ]
+    },
     "@db/sqlite@0.12.0": {
       "integrity": "dd1ef7f621ad50fc1e073a1c3609c4470bd51edc0994139c5bf9851de7a6d85f",
       "dependencies": [
@@ -27,8 +92,8 @@
     "@denosaurs/plug@1.1.0": {
       "integrity": "eb2f0b7546c7bca2000d8b0282c54d50d91cf6d75cb26a80df25a6de8c4bc044",
       "dependencies": [
-        "jsr:@std/encoding",
-        "jsr:@std/fmt",
+        "jsr:@std/encoding@1",
+        "jsr:@std/fmt@1",
         "jsr:@std/fs",
         "jsr:@std/path@1"
       ]
@@ -41,6 +106,9 @@
     },
     "@std/assert@0.217.0": {
       "integrity": "c98e279362ca6982d5285c3b89517b757c1e3477ee9f14eb2fdf80a45aaa9642"
+    },
+    "@std/assert@1.0.13": {
+      "integrity": "ae0d31e41919b12c656c742b22522c32fb26ed0cba32975cb0de2a273cb68b29"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -58,17 +126,26 @@
     "@std/internal@1.0.10": {
       "integrity": "e3be62ce42cab0e177c27698e5d9800122f67b766a0bea6ca4867886cbde8cf7"
     },
+    "@std/io@0.224.9": {
+      "integrity": "4414664b6926f665102e73c969cfda06d2c4c59bd5d0c603fd4f1b1c840d6ee3"
+    },
     "@std/path@0.217.0": {
       "integrity": "1217cc25534bca9a2f672d7fe7c6f356e4027df400c0e85c0ef3e4343bc67d11",
       "dependencies": [
-        "jsr:@std/assert"
+        "jsr:@std/assert@0.217"
       ]
+    },
+    "@std/path@1.0.9": {
+      "integrity": "260a49f11edd3db93dd38350bf9cd1b4d1366afa98e81b86167b4e3dd750129e"
     },
     "@std/path@1.1.1": {
       "integrity": "fe00026bd3a7e6a27f73709b83c607798be40e20c81dde655ce34052fd82ec76",
       "dependencies": [
         "jsr:@std/internal"
       ]
+    },
+    "@std/text@1.0.15": {
+      "integrity": "91f5cc1e12779a3d95f1be34e763f9c28a75a078b7360e6fcaef0d8d9b1e3e7f"
     }
   },
   "npm": {
@@ -157,6 +234,7 @@
     "https://esm.sh/@asteasolutions/zod-to-openapi@^7.1.0?target=denonext": "https://esm.sh/@asteasolutions/zod-to-openapi@7.3.4?target=denonext",
     "https://esm.sh/@asteasolutions/zod-to-openapi@^8.0.0?deps=zod@3.23.8&target=denonext": "https://esm.sh/@asteasolutions/zod-to-openapi@8.0.0?deps=zod@3.23.8&target=denonext",
     "https://esm.sh/@asteasolutions/zod-to-openapi@^8.0.0?target=denonext": "https://esm.sh/@asteasolutions/zod-to-openapi@8.0.0?target=denonext",
+    "https://esm.sh/@hono/node-server/serve-static@0.5.2?deps=hono@4.8.9": "https://esm.sh/@hono/node-server@1.17.1/serve-static@0.5.2?deps=hono@4.8.9",
     "https://esm.sh/@hono/swagger-ui": "https://esm.sh/@hono/swagger-ui@0.5.2",
     "https://esm.sh/@hono/zod-openapi": "https://esm.sh/@hono/zod-openapi@1.0.2",
     "https://esm.sh/@hono/zod-validator@^0.4.1?target=denonext": "https://esm.sh/@hono/zod-validator@0.4.3?target=denonext",

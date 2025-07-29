@@ -10,6 +10,7 @@ import { DatabaseConfig, databaseConfig } from "./database-config.ts";
 import { initializeDatabase } from "../database/sqlite3.ts";
 import { generateAdminUI } from "./admin-ui.ts";
 import { dynamicAPI } from "./dynamic-api.ts";
+import { serveStatic } from "@hono/node-server/serve-static";
 
 export class NanoEdgeRT {
   private config: Config;
@@ -77,6 +78,7 @@ export class NanoEdgeRT {
     // Add middleware
     this.app.use("*", cors());
     this.app.use("*", logger());
+    this.app.get("/static/*", serveStatic({ root: "./" }));
 
     // Setup OpenAPI info
     this.app.doc("/openapi.json", {

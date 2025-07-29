@@ -9,7 +9,8 @@
     "@hono/swagger-ui": "https://esm.sh/@hono/swagger-ui@0.5.2?deps=hono@4.8.9",
     "@hono/zod-openapi": "https://esm.sh/@hono/zod-openapi@1.0.2?deps=hono@4.8.9,zod@3.23.8",
     "zod": "https://esm.sh/zod@3.23.8",
-    "kysely": "npm:kysely@^0.27.2"
+    "kysely": "npm:kysely@^0.27.2",
+    "@hono/node-server/serve-static": "https://esm.sh/@hono/node-server/serve-static@0.5.2?deps=hono@4.8.9"
   },
   "tasks": {
     "start": "deno run --allow-all --unstable-worker-options main.ts",
