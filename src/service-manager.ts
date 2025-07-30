@@ -1,5 +1,5 @@
 import { ServiceConfig, ServiceInstance } from "./types.ts";
-import { allocatePort, releasePort, getServicePort } from "../database/sqlite3.ts";
+import { allocatePort, getServicePort, releasePort } from "../database/sqlite3.ts";
 import type { Kysely } from "kysely";
 import type { Database } from "../database/sqlite3.ts";
 
@@ -11,8 +11,6 @@ export class ServiceManager {
     this.dbInstance = dbInstance;
   }
 
-  // Build service method removed - no file-based services supported
-
   async startService(serviceConfig: ServiceConfig): Promise<void> {
     if (this.services.has(serviceConfig.name)) {
       console.log(`Service ${serviceConfig.name} already running`);
@@ -22,7 +20,7 @@ export class ServiceManager {
     try {
       // Check if service already has an allocated port
       let port = await getServicePort(serviceConfig.name, this.dbInstance);
-      
+
       // If no port allocated, allocate a new one
       if (!port) {
         port = await allocatePort(serviceConfig.name, this.dbInstance);

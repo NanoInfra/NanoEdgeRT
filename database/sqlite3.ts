@@ -130,14 +130,14 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
 
   if (!existingPorts) {
     console.log("🌱 Initializing ports table...");
-    
+
     // Get port range from config
     const portStartConfig = await dbInstance
       .selectFrom("config")
       .select("value")
       .where("key", "=", "available_port_start")
       .executeTakeFirst();
-    
+
     const portEndConfig = await dbInstance
       .selectFrom("config")
       .select("value")
@@ -282,7 +282,10 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
 }
 
 // Port allocation functions
-export async function allocatePort(serviceName: string, dbInstance: Kysely<Database> = db): Promise<number> {
+export async function allocatePort(
+  serviceName: string,
+  dbInstance: Kysely<Database> = db,
+): Promise<number> {
   // Find an available port
   const availablePort = await dbInstance
     .selectFrom("ports")
@@ -319,7 +322,10 @@ export async function allocatePort(serviceName: string, dbInstance: Kysely<Datab
   return availablePort.port;
 }
 
-export async function releasePort(serviceName: string, dbInstance: Kysely<Database> = db): Promise<void> {
+export async function releasePort(
+  serviceName: string,
+  dbInstance: Kysely<Database> = db,
+): Promise<void> {
   // Get the port number for the service
   const service = await dbInstance
     .selectFrom("services")
@@ -351,7 +357,10 @@ export async function releasePort(serviceName: string, dbInstance: Kysely<Databa
   }
 }
 
-export async function getServicePort(serviceName: string, dbInstance: Kysely<Database> = db): Promise<number | null> {
+export async function getServicePort(
+  serviceName: string,
+  dbInstance: Kysely<Database> = db,
+): Promise<number | null> {
   const service = await dbInstance
     .selectFrom("services")
     .select("port")
@@ -361,14 +370,16 @@ export async function getServicePort(serviceName: string, dbInstance: Kysely<Dat
   return service?.port || null;
 }
 
-export async function getAllocatedPorts(dbInstance: Kysely<Database> = db): Promise<{ port: number; serviceName: string; allocatedAt: string }[]> {
+export async function getAllocatedPorts(
+  dbInstance: Kysely<Database> = db,
+): Promise<{ port: number; serviceName: string; allocatedAt: string }[]> {
   const ports = await dbInstance
     .selectFrom("ports")
     .select(["port", "service_name", "allocated_at"])
     .where("service_name", "is not", null)
     .execute();
 
-  return ports.map(p => ({
+  return ports.map((p) => ({
     port: p.port,
     serviceName: p.service_name!,
     allocatedAt: p.allocated_at!,

@@ -22,7 +22,8 @@
     "bench": "deno bench --allow-all",
     "lint": "deno lint",
     "fmt": "deno fmt",
-    "check": "deno check **/*.ts"
+    "check": "deno check **/*.ts",
+    "precommit": "deno fmt && deno lint"
   },
   "lint": {
     "rules": {

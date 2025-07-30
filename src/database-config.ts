@@ -1,7 +1,7 @@
 import { db } from "../database/sqlite3.ts";
 import { Config, ServiceConfig, ServicePermissions } from "./types.ts";
 import { Kysely } from "kysely";
-import type { ConfigTable, ServiceTable, PortTable } from "../database/sqlite3.ts";
+import type { ConfigTable, PortTable, ServiceTable } from "../database/sqlite3.ts";
 
 interface Database {
   services: ServiceTable;
