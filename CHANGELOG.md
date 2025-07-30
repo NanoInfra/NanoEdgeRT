@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-07-30
+
+### Added
+
+- 📋 **OpenAPI Schema Support** - Added nullable `schema` column to services table for storing OpenAPI JSON schemas
+- 📚 **Service Documentation Routes** - New routes for viewing individual service documentation
+  - `/doc/:serviceName` - Swagger UI for specific service schemas
+  - `/openapi/:serviceName` - JSON endpoint for service OpenAPI schemas
+- 🔧 **Schema Validation** - Added JSON validation for OpenAPI schemas in service creation/update
+- 📖 **Default Service Schemas** - Included sample OpenAPI schemas for hello and calculator services
+- 🌐 **Enhanced Root Endpoint** - Added documentation links in root API response
+
+### Changed
+
+- 🗄️ **Database Schema** - Added `schema` column to services table with proper migration
+- 📋 **Service Creation/Update** - Enhanced APIs to handle OpenAPI schema field
+- 🏗️ **Type Definitions** - Updated `ServiceConfig` interface to include optional `schema` field
+- 📊 **Service Responses** - Updated service listing endpoints to include schema information
+
+### Technical Details
+
+- Database migration adds nullable `schema` TEXT column to services table
+- All service CRUD operations now support schema field
+- TypeScript interfaces updated across the codebase
+- Swagger UI integration for per-service documentation
+
 ## [1.1.0] - 2025-07-24
 
 ### Added

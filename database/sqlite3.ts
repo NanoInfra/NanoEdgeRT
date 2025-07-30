@@ -10,6 +10,7 @@ export interface ServiceTable {
   enabled: boolean;
   jwt_check: boolean;
   permissions: string; // JSON string
+  schema?: string; // JSON string for OpenAPI schema (nullable)
   port?: number; // Allocated port for the service
   created_at?: string;
   updated_at?: string;
@@ -69,6 +70,7 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
       "text",
       (col) => col.notNull().defaultTo('{"read":[],"write":[],"env":[],"run":[]}'),
     )
+    .addColumn("schema", "text") // Nullable JSON string for OpenAPI schema
     .addColumn("port", "integer") // Allocated port for the service
     .addColumn("created_at", "text", (col) => col.notNull())
     .addColumn("updated_at", "text", (col) => col.notNull())
@@ -247,6 +249,114 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
   );
 }`;
 
+    // OpenAPI schema for hello service
+    const helloSchema = JSON.stringify({
+      openapi: "3.0.0",
+      info: {
+        title: "Hello Service",
+        version: "1.0.0",
+        description: "A simple greeting service",
+      },
+      paths: {
+        "/": {
+          get: {
+            summary: "Get a greeting message",
+            parameters: [
+              {
+                name: "name",
+                in: "query",
+                description: "Name to greet",
+                required: false,
+                schema: {
+                  type: "string",
+                  default: "World",
+                },
+              },
+            ],
+            responses: {
+              "200": {
+                description: "Successful greeting",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        message: { type: "string" },
+                        timestamp: { type: "string", format: "date-time" },
+                        method: { type: "string" },
+                        path: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // OpenAPI schema for calculator service
+    const calculatorSchema = JSON.stringify({
+      openapi: "3.0.0",
+      info: {
+        title: "Calculator Service",
+        version: "1.0.0",
+        description: "A simple mathematical calculator service",
+      },
+      paths: {
+        "/": {
+          get: {
+            summary: "Evaluate a mathematical expression",
+            parameters: [
+              {
+                name: "expr",
+                in: "query",
+                description: "Mathematical expression to evaluate (e.g., 2+2, 10*5)",
+                required: true,
+                schema: {
+                  type: "string",
+                  example: "2+2",
+                },
+              },
+            ],
+            responses: {
+              "200": {
+                description: "Successful calculation",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        expression: { type: "string" },
+                        result: { type: "number" },
+                        timestamp: { type: "string", format: "date-time" },
+                      },
+                    },
+                  },
+                },
+              },
+              "400": {
+                description: "Invalid expression or missing parameter",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        error: { type: "string" },
+                        message: { type: "string" },
+                        example: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
     const defaultServices = [
       {
         name: "hello",
@@ -254,6 +364,7 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
         enabled: true,
         jwt_check: false,
         permissions: JSON.stringify({ read: [], write: [], env: [], run: [] }),
+        schema: helloSchema,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -263,6 +374,7 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
         enabled: true,
         jwt_check: false,
         permissions: JSON.stringify({ read: [], write: [], env: [], run: [] }),
+        schema: calculatorSchema,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },

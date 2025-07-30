@@ -1,7 +1,40 @@
 import { db } from "../database/sqlite3.ts";
-import { Config, ServiceConfig, ServicePermissions } from "./types.ts";
 import { Kysely } from "kysely";
 import type { ConfigTable, PortTable, ServiceTable } from "../database/sqlite3.ts";
+
+// Type definitions (moved from types.ts)
+export interface ServicePermissions {
+  read: string[];
+  write: string[];
+  env: string[];
+  run: string[];
+}
+
+export interface ServiceConfig {
+  name: string;
+  path?: string;
+  enable: boolean;
+  jwt_check: boolean;
+  build_command?: string;
+  permissions: ServicePermissions;
+  code?: string;
+  schema?: string;
+}
+
+export interface ServiceInstance {
+  config: ServiceConfig;
+  worker?: Worker;
+  port: number;
+  status: "starting" | "running" | "stopped" | "error";
+}
+
+export interface Config {
+  available_port_start: number;
+  available_port_end: number;
+  services: ServiceConfig[];
+  jwt_secret?: string;
+  main_port?: number;
+}
 
 interface Database {
   services: ServiceTable;
@@ -60,6 +93,7 @@ export class DatabaseConfig {
       jwt_check: Boolean(row.jwt_check),
       permissions: JSON.parse(row.permissions) as ServicePermissions,
       code: row.code,
+      schema: row.schema, // Include schema field
     }));
 
     this.config = {
@@ -97,6 +131,7 @@ export class DatabaseConfig {
     enabled?: boolean;
     jwt_check?: boolean;
     permissions?: ServicePermissions;
+    schema?: string;
   }): Promise<void> {
     const now = new Date().toISOString();
 
@@ -115,6 +150,7 @@ export class DatabaseConfig {
             run: [],
           },
         ),
+        schema: service.schema, // Include schema field (nullable)
         created_at: now,
         updated_at: now,
       })
@@ -129,12 +165,14 @@ export class DatabaseConfig {
     enabled?: boolean;
     jwt_check?: boolean;
     permissions?: ServicePermissions;
+    schema?: string;
   }): Promise<void> {
     const updateData: Partial<{
       code: string;
       enabled: boolean;
       jwt_check: boolean;
       permissions: string;
+      schema: string;
       updated_at: string;
     }> = {
       updated_at: new Date().toISOString(),
@@ -146,6 +184,7 @@ export class DatabaseConfig {
     if (updates.permissions !== undefined) {
       updateData.permissions = JSON.stringify(updates.permissions);
     }
+    if (updates.schema !== undefined) updateData.schema = updates.schema;
 
     await this.dbInstance
       .updateTable("services")
@@ -175,6 +214,7 @@ export class DatabaseConfig {
       enabled: boolean;
       jwt_check: boolean;
       permissions: ServicePermissions;
+      schema?: string;
       created_at?: string;
       updated_at?: string;
     }>
@@ -200,6 +240,7 @@ export class DatabaseConfig {
       enabled: boolean;
       jwt_check: boolean;
       permissions: ServicePermissions;
+      schema?: string;
       created_at?: string;
       updated_at?: string;
     } | null

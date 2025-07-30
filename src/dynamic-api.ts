@@ -1,5 +1,4 @@
-import { databaseConfig } from "./database-config.ts";
-import { ServicePermissions } from "./types.ts";
+import { databaseConfig, ServicePermissions } from "./database-config.ts";
 
 export class DynamicAPI {
   async handleAPIRequest(request: Request, pathSegments: string[]): Promise<Response> {
@@ -116,6 +115,7 @@ export class DynamicAPI {
     const enabled = formData.get("enabled") === "true";
     const jwtCheck = formData.get("jwt_check") === "true";
     const permissionsStr = formData.get("permissions") as string;
+    const schema = formData.get("schema") as string;
 
     if (!file || !name) {
       return new Response(
@@ -141,6 +141,18 @@ export class DynamicAPI {
       );
     }
 
+    // Validate schema if provided
+    if (schema) {
+      try {
+        JSON.parse(schema);
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "Invalid schema JSON" }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Validate JavaScript code (basic syntax check)
     try {
       new Function(code);
@@ -160,6 +172,7 @@ export class DynamicAPI {
       enabled,
       jwt_check: jwtCheck,
       permissions,
+      schema: schema || undefined,
     });
 
     return new Response(
@@ -170,13 +183,25 @@ export class DynamicAPI {
 
   private async createServiceFromJSON(request: Request): Promise<Response> {
     const body = await request.json();
-    const { name, code, enabled = true, jwt_check = false, permissions } = body;
+    const { name, code, enabled = true, jwt_check = false, permissions, schema } = body;
 
     if (!name || !code) {
       return new Response(
         JSON.stringify({ error: "Name and code are required" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
+    }
+
+    // Validate schema if provided
+    if (schema) {
+      try {
+        JSON.parse(schema);
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "Invalid schema JSON" }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // Validate JavaScript code (basic syntax check)
@@ -203,6 +228,7 @@ export class DynamicAPI {
         env: [],
         run: [],
       },
+      schema,
     });
 
     return new Response(
@@ -213,7 +239,19 @@ export class DynamicAPI {
 
   private async updateService(request: Request, serviceName: string): Promise<Response> {
     const body = await request.json();
-    const { code, enabled, jwt_check, permissions } = body;
+    const { code, enabled, jwt_check, permissions, schema } = body;
+
+    // Validate schema if provided
+    if (schema) {
+      try {
+        JSON.parse(schema);
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "Invalid schema JSON" }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // Validate JavaScript code if provided
     if (code) {
@@ -235,6 +273,7 @@ export class DynamicAPI {
       enabled,
       jwt_check,
       permissions,
+      schema,
     });
 
     return new Response(

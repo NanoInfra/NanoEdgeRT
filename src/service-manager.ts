@@ -1,4 +1,4 @@
-import { ServiceConfig, ServiceInstance } from "./types.ts";
+import { ServiceConfig, ServiceInstance } from "./database-config.ts";
 import { allocatePort, getServicePort, releasePort } from "../database/sqlite3.ts";
 import type { Kysely } from "kysely";
 import type { Database } from "../database/sqlite3.ts";
