@@ -3,7 +3,7 @@ import { logger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context, Next } from "hono";
-import { Config } from "./types.ts";
+import { Config } from "./database-config.ts";
 import { ServiceManager } from "./service-manager.ts";
 import { AuthMiddleware } from "./auth.ts";
 import { DatabaseConfig, databaseConfig } from "./database-config.ts";
@@ -80,25 +80,72 @@ export class NanoEdgeRT {
     this.app.use("*", logger());
     this.app.get("/static/*", serveStatic({ root: "./" }));
 
-    // Setup OpenAPI info
-    this.app.doc("/openapi.json", {
-      openapi: "3.0.0",
-      info: {
-        version: "1.0.0",
-        title: "NanoEdgeRT API",
-        description: "A lightweight edge function runtime for Deno",
-      },
-      servers: [
-        {
-          url: `http://127.0.0.1:${this.config.main_port || 8000}`,
-          description: "Development server",
-        },
-      ],
+    // Service-specific documentation routes
+    this.app.get("/doc/:serviceName", async (c, next) => {
+      const serviceName = c.req.param("serviceName");
+      const service = this.serviceManager.getService(serviceName);
+
+      if (!service) {
+        return c.json({ error: `Service '${serviceName}' not found` }, 404);
+      }
+
+      // Get service from database to access schema
+      const dbService = await this.dbConfig.getService(serviceName);
+      if (!dbService) {
+        return c.json({});
+      } else if (!dbService.schema) {
+        return c.json({
+          error: `No OpenAPI schema found for service '${serviceName}'`,
+          hint: "Add an OpenAPI schema to this service to view its documentation",
+        }, 404);
+      }
+
+      return swaggerUI({ url: `/openapi/${serviceName}` })(c, next);
     });
 
-    // Setup Swagger UI
-    this.app.get("/docs", swaggerUI({ url: "/openapi.json" }));
-    this.app.get("/swagger", swaggerUI({ url: "/openapi.json" }));
+    // Service OpenAPI schema endpoint
+    this.app.get("/openapi/:serviceName", async (c) => {
+      const serviceName = c.req.param("serviceName");
+      if (!serviceName) {
+        return c.json({ error: "Service name is required" }, 400);
+      }
+
+      const dbService = await this.dbConfig.getService(serviceName);
+
+      if (!dbService || !dbService.schema) {
+        return c.json({
+          error: `No OpenAPI schema found for service '${serviceName}'`,
+        }, 404);
+      }
+
+      try {
+        const schema = JSON.parse(dbService.schema);
+
+        // Ensure the schema has the required OpenAPI structure
+        if (!schema.openapi && !schema.swagger) {
+          return c.json({
+            error: `Invalid OpenAPI schema for service '${serviceName}'`,
+          }, 400);
+        }
+
+        // Add server information if not present
+        if (!schema.servers) {
+          schema.servers = [
+            {
+              url: `http://127.0.0.1:${this.config.main_port || 8000}/${serviceName}`,
+              description: `${serviceName} service endpoint`,
+            },
+          ];
+        }
+
+        return c.json(schema);
+      } catch (error) {
+        return c.json({
+          error: `Invalid JSON schema for service '${serviceName}'`,
+          details: error instanceof Error ? error.message : String(error),
+        }, 400);
+      }
+    });
 
     // Health check route
     this.app.get("/health", (c) => {
@@ -154,6 +201,15 @@ export class NanoEdgeRT {
           status: s.status,
           port: s.port,
         })),
+        documentation: {
+          main: "/docs",
+          services: this.serviceManager.getAllServices()
+            .map((s) => s.config.name)
+            .map((name) => ({
+              service: name,
+              docs: `/doc/${name}`,
+            })),
+        },
       });
     });
 

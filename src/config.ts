@@ -1,4 +1,4 @@
-import { Config } from "./types.ts";
+import { Config } from "./database-config.ts";
 
 export async function loadConfig(configPath: string = "./nanoedge/config.json"): Promise<Config> {
   try {
