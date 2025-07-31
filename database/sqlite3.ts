@@ -36,15 +36,8 @@ export interface Database {
   ports: PortTable;
 }
 
-// Default database for production
-export const db = new Kysely<Database>({
-  dialect: new DenoSqlite3Dialect({
-    database: new Sqlite("db.sqlite3"),
-  }),
-});
-
 // Function to create a database instance with custom path
-export function createDatabase(dbPath: string) {
+function createDatabase(dbPath: string) {
   return new Kysely<Database>({
     dialect: new DenoSqlite3Dialect({
       database: new Sqlite(dbPath),
@@ -52,8 +45,30 @@ export function createDatabase(dbPath: string) {
   });
 }
 
+function loadDatabase(dbPath: string): Kysely<Database> {
+  if (dbPath === ":memory:") {
+    throw new Error("In-memory database is not supported in this context");
+  }
+  return new Kysely<Database>({
+    dialect: new DenoSqlite3Dialect({
+      database: new Sqlite(dbPath),
+    }),
+  });
+}
+
+export async function createOrLoadDatabase(dbPath: string): Promise<Kysely<Database>> {
+  try {
+    return loadDatabase(dbPath);
+  } catch (error) {
+    console.error("Failed to load database, creating a new one:", error);
+    const db = createDatabase(dbPath);
+    await initializeDatabase(db);
+    return db;
+  }
+}
+
 // Initialize database with tables
-export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
+export async function initializeDatabase(dbInstance: Kysely<Database>) {
   console.log("🗄️ Initializing database...");
 
   // Create services table
@@ -203,52 +218,6 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
   );
 }`;
 
-    // Calculator service
-    const calculatorService = `export default async function handler(req) {
-  const url = new URL(req.url);
-  
-  if (req.method === "GET") {
-    const expression = url.searchParams.get("expr");
-    if (!expression) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Missing 'expr' parameter",
-          example: "/calculator?expr=2+2" 
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-    
-    try {
-      // Simple calculator - only allow basic operations for security
-      const sanitized = expression.replace(/[^0-9+\\-*/().\\s]/g, '');
-      const result = Function('"use strict"; return (' + sanitized + ')')();
-      
-      return new Response(
-        JSON.stringify({ 
-          expression: expression,
-          result: result,
-          timestamp: new Date().toISOString()
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    } catch (error) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Invalid expression",
-          message: error.message 
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  }
-  
-  return new Response(
-    JSON.stringify({ error: "Method not allowed" }),
-    { status: 405, headers: { "Content-Type": "application/json" } }
-  );
-}`;
-
     // OpenAPI schema for hello service
     const helloSchema = JSON.stringify({
       openapi: "3.0.0",
@@ -296,69 +265,9 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
       },
     });
 
-    // OpenAPI schema for calculator service
-    const calculatorSchema = JSON.stringify({
-      openapi: "3.0.0",
-      info: {
-        title: "Calculator Service",
-        version: "1.0.0",
-        description: "A simple mathematical calculator service",
-      },
-      paths: {
-        "/": {
-          get: {
-            summary: "Evaluate a mathematical expression",
-            parameters: [
-              {
-                name: "expr",
-                in: "query",
-                description: "Mathematical expression to evaluate (e.g., 2+2, 10*5)",
-                required: true,
-                schema: {
-                  type: "string",
-                  example: "2+2",
-                },
-              },
-            ],
-            responses: {
-              "200": {
-                description: "Successful calculation",
-                content: {
-                  "application/json": {
-                    schema: {
-                      type: "object",
-                      properties: {
-                        expression: { type: "string" },
-                        result: { type: "number" },
-                        timestamp: { type: "string", format: "date-time" },
-                      },
-                    },
-                  },
-                },
-              },
-              "400": {
-                description: "Invalid expression or missing parameter",
-                content: {
-                  "application/json": {
-                    schema: {
-                      type: "object",
-                      properties: {
-                        error: { type: "string" },
-                        message: { type: "string" },
-                        example: { type: "string" },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const defaultServices = [
-      {
+    await dbInstance
+      .insertInto("services")
+      .values({
         name: "hello",
         code: helloService,
         enabled: true,
@@ -367,27 +276,10 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
         schema: helloSchema,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      },
-      {
-        name: "calculator",
-        code: calculatorService,
-        enabled: true,
-        jwt_check: false,
-        permissions: JSON.stringify({ read: [], write: [], env: [], run: [] }),
-        schema: calculatorSchema,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ];
+      })
+      .execute();
 
-    for (const service of defaultServices) {
-      await dbInstance
-        .insertInto("services")
-        .values(service)
-        .execute();
-    }
-
-    console.log("✅ Default services added: hello, calculator");
+    console.log("✅ Default services added: hello");
   }
 
   console.log("✅ Database initialized");
@@ -396,7 +288,7 @@ export async function initializeDatabase(dbInstance: Kysely<Database> = db) {
 // Port allocation functions
 export async function allocatePort(
   serviceName: string,
-  dbInstance: Kysely<Database> = db,
+  dbInstance: Kysely<Database>,
 ): Promise<number> {
   // Find an available port
   const availablePort = await dbInstance
@@ -436,7 +328,7 @@ export async function allocatePort(
 
 export async function releasePort(
   serviceName: string,
-  dbInstance: Kysely<Database> = db,
+  dbInstance: Kysely<Database>,
 ): Promise<void> {
   // Get the port number for the service
   const service = await dbInstance
@@ -471,7 +363,7 @@ export async function releasePort(
 
 export async function getServicePort(
   serviceName: string,
-  dbInstance: Kysely<Database> = db,
+  dbInstance: Kysely<Database>,
 ): Promise<number | null> {
   const service = await dbInstance
     .selectFrom("services")
@@ -483,7 +375,7 @@ export async function getServicePort(
 }
 
 export async function getAllocatedPorts(
-  dbInstance: Kysely<Database> = db,
+  dbInstance: Kysely<Database>,
 ): Promise<{ port: number; serviceName: string; allocatedAt: string }[]> {
   const ports = await dbInstance
     .selectFrom("ports")
@@ -497,5 +389,3 @@ export async function getAllocatedPorts(
     allocatedAt: p.allocated_at!,
   }));
 }
-
-export const DB = db;

@@ -1,11 +1,12 @@
 {
   "name": "nanoedgert",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "A lightweight, high-performance edge function runtime built with Deno",
   "imports": {
     "hono": "https://esm.sh/hono@4.8.9",
     "hono/cors": "https://esm.sh/hono@4.8.9/dist/middleware/cors",
     "hono/logger": "https://esm.sh/hono@4.8.9/dist/middleware/logger",
+    "hono/jwt": "https://esm.sh/hono@4.8.9/dist/middleware/jwt",
     "@hono/swagger-ui": "https://esm.sh/@hono/swagger-ui@0.5.2?deps=hono@4.8.9",
     "@hono/zod-openapi": "https://esm.sh/@hono/zod-openapi@1.0.2?deps=hono@4.8.9,zod@3.23.8",
     "zod": "https://esm.sh/zod@3.23.8",
@@ -18,8 +19,7 @@
     "test": "deno test --allow-all --unstable-worker-options tests/",
     "test:unit": "deno test --allow-all --unstable-worker-options tests/unit/",
     "test:integration": "deno test --allow-all --unstable-worker-options tests/integration/",
-    "test:watch": "deno test --allow-all --unstable-worker-options --watch tests/",
-    "bench": "deno bench --allow-all",
+    "bench": "deno bench --allow-all  --unstable-worker-options ",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "check": "deno check **/*.ts",
