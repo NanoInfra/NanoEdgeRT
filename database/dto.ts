@@ -103,21 +103,17 @@ export async function updateConfig(
   context.config = null;
 }
 
-export async function createService(context: DatabaseContext, service: {
-  name: string;
-  code: string;
-  enabled?: boolean;
-  jwt_check?: boolean;
-  permissions?: ServicePermissions;
-  schema?: string;
-}): Promise<void> {
+export async function createService(
+  context: DatabaseContext,
+  service: ServiceConfig,
+): Promise<ServiceConfig> {
   const now = new Date().toISOString();
 
   await context.dbInstance
     .insertInto("services")
     .values({
       name: service.name,
-      code: service.code,
+      code: service.code || "",
       enabled: service.enabled ?? true,
       jwt_check: service.jwt_check ?? false,
       permissions: JSON.stringify(
@@ -128,7 +124,7 @@ export async function createService(context: DatabaseContext, service: {
           run: [],
         },
       ),
-      schema: service.schema, // Include schema field (nullable)
+      schema: service.schema || undefined, // Include schema field (nullable)
       created_at: now,
       updated_at: now,
     })
@@ -136,6 +132,7 @@ export async function createService(context: DatabaseContext, service: {
 
   // Invalidate cache
   context.config = null;
+  return service; // Return the created service
 }
 
 export async function updateService(context: DatabaseContext, name: string, updates: {

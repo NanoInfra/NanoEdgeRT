@@ -1,6 +1,6 @@
 import { Kysely } from "kysely";
 import { Database as Sqlite } from "jsr:@db/sqlite";
-import { DenoSqlite3Dialect } from "jsr:@soapbox/kysely-deno-sqlite";
+import { DenoSqliteDialect } from "./kysely_deno_sqlite3_adapter.ts";
 
 // Database schema types
 export interface ServiceTable {
@@ -39,9 +39,7 @@ export interface Database {
 // Function to create a database instance with custom path
 function createDatabase(dbPath: string) {
   return new Kysely<Database>({
-    dialect: new DenoSqlite3Dialect({
-      database: new Sqlite(dbPath),
-    }),
+    dialect: new DenoSqliteDialect(new Sqlite(dbPath)),
   });
 }
 
@@ -50,26 +48,61 @@ function loadDatabase(dbPath: string): Kysely<Database> {
     throw new Error("In-memory database is not supported in this context");
   }
   return new Kysely<Database>({
-    dialect: new DenoSqlite3Dialect({
-      database: new Sqlite(dbPath),
-    }),
+    dialect: new DenoSqliteDialect(new Sqlite(dbPath)),
   });
 }
 
-export async function createOrLoadDatabase(dbPath: string): Promise<Kysely<Database>> {
-  try {
-    const db = loadDatabase(dbPath);
-    return db;
-  } catch (error) {
-    console.error("Failed to load database, creating a new one:", error);
+export async function createOrLoadDatabase(
+  dbPath: string,
+  config: DbInitConfig = DEFAULT_DB_INIT_CONFIG,
+): Promise<Kysely<Database>> {
+  // Check if database file exists (excluding :memory:)
+  let dbExists = false;
+  if (dbPath !== ":memory:") {
+    try {
+      await Deno.stat(dbPath);
+      dbExists = true;
+    } catch (_error) {
+      // File doesn't exist
+      dbExists = false;
+    }
+  }
+
+  if (dbExists) {
+    try {
+      const db = loadDatabase(dbPath);
+      return db;
+    } catch (_error) {
+      // console.error("Failed to load database, creating a new one:", error);
+      const db = createDatabase(dbPath);
+      await initializeDatabase(db, config);
+      return db;
+    }
+  } else {
     const db = createDatabase(dbPath);
-    await initializeDatabase(db);
+    await initializeDatabase(db, config);
     return db;
   }
 }
+export interface DbInitConfig {
+  available_port_start?: number;
+  available_port_end?: number;
+  main_port?: number;
+  jwt_secret?: string;
+}
+
+export const DEFAULT_DB_INIT_CONFIG: DbInitConfig = {
+  available_port_start: 8001,
+  available_port_end: 8999,
+  main_port: 8000,
+  jwt_secret: Deno.env.get("JWT_SECRET") || "default-secret-change-me",
+};
 
 // Initialize database with tables
-export async function initializeDatabase(dbInstance: Kysely<Database>) {
+export async function initializeDatabase(
+  dbInstance: Kysely<Database>,
+  config: DbInitConfig,
+) {
   console.log("🗄️ Initializing database...");
 
   // Create services table
@@ -112,27 +145,19 @@ export async function initializeDatabase(dbInstance: Kysely<Database>) {
     .addColumn("released_at", "text")
     .execute();
 
-  // Insert default config values if they don't exist
-  const defaultConfigs = [
-    { key: "available_port_start", value: "8001" },
-    { key: "available_port_end", value: "8999" },
-    { key: "main_port", value: "8000" },
-    { key: "jwt_secret", value: Deno.env.get("JWT_SECRET") || "default-secret-change-me" },
-  ];
-
-  for (const config of defaultConfigs) {
+  for (const [key, value] of Object.entries(config)) {
     const existing = await dbInstance
       .selectFrom("config")
       .select("key")
-      .where("key", "=", config.key)
+      .where("key", "=", key)
       .executeTakeFirst();
 
     if (!existing) {
       await dbInstance
         .insertInto("config")
         .values({
-          key: config.key,
-          value: config.value,
+          key: key,
+          value: value,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -177,7 +202,7 @@ export async function initializeDatabase(dbInstance: Kysely<Database>) {
     }
 
     // Insert ports in batches to avoid potential issues with large ranges
-    const batchSize = 100;
+    const batchSize = 10;
     for (let i = 0; i < portInserts.length; i += batchSize) {
       const batch = portInserts.slice(i, i + batchSize);
       await dbInstance
@@ -291,74 +316,97 @@ export async function allocatePort(
   serviceName: string,
   dbInstance: Kysely<Database>,
 ): Promise<number> {
-  // Find an available port
-  const availablePort = await dbInstance
-    .selectFrom("ports")
-    .select("port")
-    .where("service_name", "is", null)
-    .orderBy("port", "asc")
-    .executeTakeFirst();
+  const trx = await dbInstance.startTransaction().execute();
 
-  if (!availablePort) {
-    throw new Error("No available ports");
+  try {
+    // Find an available port
+    const availablePort = await trx
+      .selectFrom("ports")
+      .select("port")
+      .where((eb) =>
+        eb.or([
+          eb("service_name", "is", null),
+          eb("released_at", "is not", null),
+        ])
+      )
+      .orderBy("port", "asc")
+      .executeTakeFirst();
+
+    if (!availablePort) {
+      throw new Error("No available ports");
+    }
+
+    // Allocate the port to the service
+    await trx
+      .updateTable("ports")
+      .set({
+        service_name: serviceName,
+        allocated_at: new Date().toISOString(),
+        released_at: undefined,
+      })
+      .where("port", "=", availablePort.port)
+      .execute();
+
+    // Update the service record with the allocated port
+    await trx
+      .updateTable("services")
+      .set({
+        port: availablePort.port,
+        updated_at: new Date().toISOString(),
+      })
+      .where("name", "=", serviceName)
+      .execute();
+
+    await trx.commit().execute();
+    return availablePort.port;
+  } catch (error) {
+    await trx.rollback().execute();
+    throw error;
   }
-
-  // Allocate the port to the service
-  await dbInstance
-    .updateTable("ports")
-    .set({
-      service_name: serviceName,
-      allocated_at: new Date().toISOString(),
-      released_at: undefined,
-    })
-    .where("port", "=", availablePort.port)
-    .execute();
-
-  // Update the service record with the allocated port
-  await dbInstance
-    .updateTable("services")
-    .set({
-      port: availablePort.port,
-      updated_at: new Date().toISOString(),
-    })
-    .where("name", "=", serviceName)
-    .execute();
-
-  return availablePort.port;
 }
 
 export async function releasePort(
   serviceName: string,
   dbInstance: Kysely<Database>,
 ): Promise<void> {
-  // Get the port number for the service
-  const service = await dbInstance
-    .selectFrom("services")
-    .select("port")
-    .where("name", "=", serviceName)
-    .executeTakeFirst();
+  const trx = await dbInstance.startTransaction().execute();
 
-  if (service?.port) {
-    // Release the port
-    await dbInstance
-      .updateTable("ports")
-      .set({
-        service_name: undefined,
-        allocated_at: undefined,
-        released_at: new Date().toISOString(),
-      })
-      .where("port", "=", service.port)
-      .execute();
-
-    // Remove port from service record
-    await dbInstance
-      .updateTable("services")
-      .set({
-        port: undefined,
-        updated_at: new Date().toISOString(),
-      })
+  try {
+    // Get the port number for the service
+    const service = await trx
+      .selectFrom("services")
+      .select("port")
       .where("name", "=", serviceName)
-      .execute();
+      .executeTakeFirst();
+    if (service?.port) {
+      // Release the port
+      await trx
+        .updateTable("ports")
+        .set({
+          service_name: undefined,
+          allocated_at: undefined,
+          released_at: new Date().toISOString(),
+        })
+        .where("port", "=", service.port)
+        .execute();
+
+      // Remove port from service record
+      await trx
+        .updateTable("services")
+        .set({
+          port: undefined,
+          updated_at: new Date().toISOString(),
+        })
+        .where("name", "=", serviceName)
+        .execute();
+    } else {
+      throw new Error(`Service ${serviceName} does not have an allocated port`);
+    }
+
+    await trx.commit().execute();
+  } catch (error) {
+    await trx.rollback().execute();
+    console.warn("⚠️ Error releasing port:", error);
   }
 }
 

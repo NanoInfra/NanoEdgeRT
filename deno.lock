@@ -29,6 +29,7 @@
     "jsr:@std/text@~1.0.7": "1.0.15",
     "npm:@types/node@*": "22.15.15",
     "npm:kysely@~0.27.2": "0.27.6",
+    "npm:kysely@~0.28.3": "0.28.3",
     "npm:pg-pool@*": "3.10.1_pg@8.16.3"
   },
   "jsr": {
@@ -101,7 +102,7 @@
     "@soapbox/kysely-deno-sqlite@2.2.0": {
       "integrity": "668ec94600bc4b4d7bd618dd7ca65d4ef30ee61c46ffcb379b6f45203c08517a",
       "dependencies": [
-        "npm:kysely"
+        "npm:kysely@~0.27.2"
       ]
     },
     "@std/assert@0.217.0": {
@@ -157,6 +158,9 @@
     },
     "kysely@0.27.6": {
       "integrity": "sha512-FIyV/64EkKhJmjgC0g2hygpBv5RNWVPyNCqSAD7eTCv6eFWNIi4PN1UvdSJGicN/o35bnevgis4Y0UDC0qi8jQ=="
+    },
+    "kysely@0.28.3": {
+      "integrity": "sha512-svKnkSH72APRdjfVCCOknxaC9Eb3nA2StHG9d5/sKOqRvHRp2Dtf1XwDvc92b4B5v6LV+EAGWXQbZ5jMOvHaDw=="
     },
     "pg-cloudflare@1.2.7": {
       "integrity": "sha512-YgCtzMH0ptvZJslLM1ffsY4EuGaU0cx4XSdXLRFae8bPP4dS5xL1tNB3k2o/N64cHJpwU7dxKli/nZ2lUa5fLg=="
@@ -387,7 +391,7 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:kysely@~0.27.2"
+      "npm:kysely@~0.28.3"
     ]
   }
 }
