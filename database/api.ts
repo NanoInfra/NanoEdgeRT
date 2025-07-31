@@ -1,5 +1,5 @@
 import type { Context, Next } from "hono";
-import type { OpenAPIHono } from "@hono/zod-openapi";
+import type { Hono } from "hono";
 import {
   createService,
   DatabaseContext,
@@ -26,7 +26,7 @@ export function databaseMiddleware(dbContext: DatabaseContext) {
 }
 
 // Setup all API routes
-export function setupAPIRoutes(app: OpenAPIHono, dbContext: DatabaseContext) {
+export function setupAPIRoutes(app: Hono, dbContext: DatabaseContext) {
   // Apply database middleware to all API routes
   app.use("*", databaseMiddleware(dbContext));
 

@@ -1,5 +1,5 @@
 import { swaggerUI } from "@hono/swagger-ui";
-import { OpenAPIHono } from "@hono/zod-openapi";
+import { Hono } from "hono";
 import { getService as getServiceFromDB, loadConfig } from "../database/dto.ts";
 import {
   getService,
@@ -14,16 +14,11 @@ import { Context } from "hono";
 export function setupDocsRoutes(
   context: ServiceManagerState,
 ) {
-  const doc = new OpenAPIHono();
+  const doc = new Hono();
   // Serve static files for documentation
   doc.get("/:serviceName", async (c, next) => {
     const serviceName = await c.req.param("serviceName");
-    const service = getService(context, serviceName);
-
-    if (!service) {
-      return c.json({ error: `Service '${serviceName}' not found` }, 404);
-    }
-    return swaggerUI({ url: `/openapi/${serviceName}` })(c, next);
+    return swaggerUI({ url: `/api/docs/openapi/${serviceName}` })(c, next);
   });
 
   // Service OpenAPI schema endpoint
@@ -49,7 +44,7 @@ export function setupDocsRoutes(
       if (!schema.servers) {
         schema.servers = [
           {
-            url: `http://127.0.0.1:${config.main_port || 8000}/${serviceName}`,
+            url: `http://127.0.0.1:${config.main_port || 8000}/api/v2/${serviceName}`,
             description: `${serviceName} service endpoint`,
           },
         ];
@@ -69,7 +64,7 @@ export function setupDocsRoutes(
 export function setupApiRoutes(
   context: ServiceManagerState,
 ) {
-  const serviceRouter = new OpenAPIHono();
+  const serviceRouter = new Hono();
   serviceRouter.all("/:serviceName/*", async (c) => {
     const serviceName = c.req.param("serviceName");
     const service = getService(context, serviceName);
@@ -94,7 +89,7 @@ export function setupApiRoutes(
       }
       // start service
       const service = await startService(context, serviceConfig);
-      handleService(service);
+      return handleService(service);
     } else {
       return handleService(service);
     }

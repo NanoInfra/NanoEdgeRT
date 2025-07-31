@@ -275,17 +275,15 @@ For enhanced security, NanoEdgeRT implements **IP-based access controls**:
 
 ### System Endpoints
 
-| Endpoint                | Method | Description                        | Access           | Performance                |
-| ----------------------- | ------ | ---------------------------------- | ---------------- | -------------------------- |
-| `/`                     | GET    | Welcome message and service list   | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
-| `/static/*`             | GET    | Serve static files                 | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
-| `/health`               | GET    | Health check and service status    | `0.0.0.0:8000`   | **~73µs** (13,730 ops/sec) |
-| `/admin`                | GET    | 🎨 **Modern Dashboard UI**         | `127.0.0.1:8000` | **~150µs** (6,600 ops/sec) |
-| `/docs`                 | GET    | 🎨 **Swagger UI documentation**    | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
-| `/swagger`              | GET    | Swagger UI documentation (alias)   | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
-| `/openapi.json`         | GET    | OpenAPI 3.0.3 specification        | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
-| `/doc/:serviceName`     | GET    | 📋 **Service-specific Swagger UI** | `0.0.0.0:8000`   | **~180µs** (5,500 ops/sec) |
-| `/openapi/:serviceName` | GET    | Service OpenAPI schema JSON        | `0.0.0.0:8000`   | **~180µs** (5,500 ops/sec) |
+| Endpoint        | Method | Description                      | Access           | Performance                |
+| --------------- | ------ | -------------------------------- | ---------------- | -------------------------- |
+| `/`             | GET    | Welcome message and service list | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
+| `/static/*`     | GET    | Serve static files               | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
+| `/health`       | GET    | Health check and service status  | `0.0.0.0:8000`   | **~73µs** (13,730 ops/sec) |
+| `/admin`        | GET    | 🎨 **Modern Dashboard UI**       | `127.0.0.1:8000` | **~150µs** (6,600 ops/sec) |
+| `/docs`         | GET    | 🎨 **Swagger UI documentation**  | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
+| `/swagger`      | GET    | Swagger UI documentation (alias) | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
+| `/openapi.json` | GET    | OpenAPI 3.0.3 specification      | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
 
 ### Dynamic Admin API Endpoints (Authentication Required)
 

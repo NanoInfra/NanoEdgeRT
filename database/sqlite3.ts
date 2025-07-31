@@ -58,7 +58,8 @@ function loadDatabase(dbPath: string): Kysely<Database> {
 
 export async function createOrLoadDatabase(dbPath: string): Promise<Kysely<Database>> {
   try {
-    return loadDatabase(dbPath);
+    const db = loadDatabase(dbPath);
+    return db;
   } catch (error) {
     console.error("Failed to load database, creating a new one:", error);
     const db = createDatabase(dbPath);

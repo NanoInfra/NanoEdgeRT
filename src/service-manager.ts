@@ -1,4 +1,4 @@
-import { DatabaseContext, loadConfig, ServiceConfig } from "../database/dto.ts";
+import { DatabaseContext, ServiceConfig } from "../database/dto.ts";
 import { allocatePort, getServicePort, releasePort } from "../database/sqlite3.ts";
 
 export interface ServiceInstance {
@@ -32,8 +32,16 @@ export function getService(
 
 export function getAllServices(
   state: ServiceManagerState,
-): ServiceInstance[] {
-  return Array.from(state.services.values());
+): object[] {
+  return Array.from(state.services.values()).map((service) => (
+    {
+      ...service,
+      name: service.config.name,
+      jwt_check: service.config.jwt_check,
+      config: undefined, // Do not expose full config in API
+      worker: undefined, // Do not expose worker in API
+    }
+  ));
 }
 
 export async function startService(

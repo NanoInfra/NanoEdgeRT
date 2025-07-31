@@ -1,4 +1,4 @@
-import { OpenAPIHono } from "@hono/zod-openapi";
+import { Hono, MiddlewareHandler } from "hono";
 import { jwt } from "hono/jwt";
 import { setupAPIRoutes } from "../database/api.ts";
 import { DatabaseContext } from "../database/dto.ts";
@@ -17,7 +17,7 @@ declare module "hono" {
   }
 }
 
-export function jwtCheck(c: Context, next: any): Promise<void> {
+export function jwtCheck(c: Context, next: MiddlewareHandler): Promise<void> {
   return jwt({
     secret: Deno.env.get("ADMIN_JWT_SECRET") || "admin",
     algorithms: ["HS256"],
@@ -27,13 +27,13 @@ export function jwtCheck(c: Context, next: any): Promise<void> {
 export function setupAdminAPIRoutes(
   dbContext: DatabaseContext,
 ) {
-  const app = new OpenAPIHono();
+  const app = new Hono();
   app.use(
     "*",
     jwtCheck,
   );
 
-  const adminRoutes = new OpenAPIHono();
+  const adminRoutes = new Hono();
   setupAPIRoutes(adminRoutes, dbContext);
   app.route("*", adminRoutes);
   return app;
