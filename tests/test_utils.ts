@@ -1,80 +1,47 @@
-import {
-  assertEquals,
-  assertExists,
-  assertRejects,
-} from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { createOrLoadDatabase } from "../database/sqlite3.ts";
+import { ServiceConfig } from "../database/dto.ts";
 
-export { assertEquals, assertExists, assertRejects };
+let port = 9000; // Base port for tests
+export async function createIsolatedDb() {
+  const db = await createOrLoadDatabase(":memory:", {
+    available_port_start: port + 1,
+    available_port_end: port + 20,
+    main_port: port,
+    jwt_secret: Deno.env.get("JWT_SECRET") || "default-secret-change-me",
+  });
 
-export interface TestContext {
-  name: string;
-  only?: boolean;
-  ignore?: boolean;
-  sanitizeOps?: boolean;
-  sanitizeResources?: boolean;
+  port += 20; // Increment base port for next test
+  return db;
 }
 
-export function createTestServer(port: number = 8000): {
-  start: () => Promise<void>;
-  stop: () => void;
-  url: string;
-} {
-  let abortController: AbortController | undefined;
+/**
+ * Creates a minimal test service configuration
+ */
+export function createTestService(name: string, responseMessage?: string): ServiceConfig {
+  const message = responseMessage || `Hello from ${name}`;
 
   return {
-    url: `http://0.0.0.0:${port}`,
-    start: async () => {
-      abortController = new AbortController();
-      const _ = await 1;
-      // Server implementation would go here
-    },
-    stop: () => {
-      if (abortController) {
-        abortController.abort();
-      }
+    name,
+    code: `export default async function handler(req) {
+      const url = new URL(req.url);
+      return new Response(JSON.stringify({
+        message: "${message}",
+        service: "${name}",
+        method: req.method,
+        path: url.pathname,
+        timestamp: new Date().toISOString()
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }`,
+    enabled: true,
+    jwt_check: false,
+    permissions: {
+      read: [],
+      write: [],
+      env: [],
+      run: [],
     },
   };
-}
-
-export async function waitForServer(url: string, timeout: number = 5000): Promise<void> {
-  const start = Date.now();
-
-  while (Date.now() - start < timeout) {
-    try {
-      const response = await fetch(`${url}/health`);
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      // Server not ready yet
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-
-  throw new Error(`Server at ${url} did not become ready within ${timeout}ms`);
-}
-
-export function createMockRequest(url: string, options: RequestInit = {}): Request {
-  return new Request(url, {
-    method: "GET",
-    ...options,
-  });
-}
-
-export async function assertJsonResponse(
-  response: Response,
-  expectedStatus: number = 200,
-  expectedData?: unknown,
-): Promise<unknown> {
-  assertEquals(response.status, expectedStatus);
-  assertEquals(response.headers.get("content-type"), "application/json");
-
-  const data = await response.json();
-
-  if (expectedData) {
-    assertEquals(data, expectedData);
-  }
-
-  return data;
 }

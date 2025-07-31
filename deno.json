@@ -1,25 +1,25 @@
 {
-  "name": "nanoedgert",
-  "version": "1.2.0",
+  "name": "NanoEdgeRT",
+  "version": "2.0.0",
   "description": "A lightweight, high-performance edge function runtime built with Deno",
   "imports": {
     "hono": "https://esm.sh/hono@4.8.9",
     "hono/cors": "https://esm.sh/hono@4.8.9/dist/middleware/cors",
     "hono/logger": "https://esm.sh/hono@4.8.9/dist/middleware/logger",
+    "hono/jwt": "https://esm.sh/hono@4.8.9/dist/middleware/jwt",
     "@hono/swagger-ui": "https://esm.sh/@hono/swagger-ui@0.5.2?deps=hono@4.8.9",
-    "@hono/zod-openapi": "https://esm.sh/@hono/zod-openapi@1.0.2?deps=hono@4.8.9,zod@3.23.8",
-    "zod": "https://esm.sh/zod@3.23.8",
-    "kysely": "npm:kysely@^0.27.2",
-    "@hono/node-server/serve-static": "https://esm.sh/@hono/node-server/serve-static?deps=hono@4.8.9"
+    "@hono/node-server/serve-static": "https://esm.sh/@hono/node-server/serve-static?deps=hono@4.8.9",
+    "kysely": "npm:kysely@^0.28.3"
   },
+  "unstable": [
+    "worker-options"
+  ],
   "tasks": {
-    "start": "deno run --allow-all --unstable-worker-options main.ts",
-    "dev": "deno run --allow-all --watch --unstable-worker-options main.ts",
+    "start": "deno run --allow-all --unstable-worker-options src/nanoedge.ts",
     "test": "deno test --allow-all --unstable-worker-options tests/",
     "test:unit": "deno test --allow-all --unstable-worker-options tests/unit/",
     "test:integration": "deno test --allow-all --unstable-worker-options tests/integration/",
-    "test:watch": "deno test --allow-all --unstable-worker-options --watch tests/",
-    "bench": "deno bench --allow-all",
+    "bench": "deno bench --allow-all  --unstable-worker-options ",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "check": "deno check **/*.ts",

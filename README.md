@@ -1,66 +1,81 @@
-# 🔬 NanoEdgeRT 📏
+# 🚀 NanoEdgeRT v2.0
 
 [![CI](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml/badge.svg)](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml)
 [![Deno](https://img.shields.io/badge/Deno-000000?style=for-the-badge&logo=deno&logoColor=white)](https://deno.land/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-**NanoEdgeRT** is a lightweight, high-performance edge function runtime built with Deno and SQLite. It provides a modern, database-driven platform for deploying and managing serverless functions at the edge, with built-in JWT authentication, dynamic API management, and comprehensive documentation.
+**Next-Generation Edge Function Runtime** - A lightweight, high-performance platform built with Deno and SQLite for deploying and managing serverless functions at the edge with enterprise-grade security and developer experience.
 
-> 🏆 **Performance Champion**: Sub-millisecond response times, 5,000+ ops/sec throughput, and interactive Swagger documentation that auto-generates from your services!
+> 🏆 **Enterprise Ready**: Sub-millisecond response times, 5,000+ ops/sec throughput, JWT authentication, versioned APIs, and auto-generated documentation!
 
-## ✨ Features
+## ✨ Key Features
 
-- 🚀 **Blazing Fast Performance** - **~2.5ms response time**, **400+ ops/sec** throughput
-- 🗄️ **Database-Driven Architecture** - **SQLite + Kysely ORM** for persistent service management
-- 🎨 **Modern Admin UI** - Beautiful **Vercel-style dashboard** at `/admin` for service management
-- 📊 **Interactive API Documentation** - Beautiful **Swagger UI** with live testing at `/docs`
-- 🔧 **Dynamic Service Management** - **CRUD API** for services under `/_admin` endpoints
-- 🔒 **Enterprise-Grade Security** - JWT authentication with granular permissions
-- ⚡ **High Concurrency** - Handle **concurrent requests** with isolated Deno Workers
-- 🛡️ **Military-Grade Isolation** - Each service runs in isolated Deno Workers
-- 🔄 **Hot Reload Everything** - Development mode with instant updates
-- 📈 **Real-time Monitoring** - Built-in health checks and service metrics
-- 🎯 **100% TypeScript** - Type-safe development with strict checking
-- 🌍 **Production Ready** - Battle-tested with comprehensive test coverage
+### 🔗 Versioned API Architecture
 
-## 🏗️ Architecture
+- **Service API**: `/api/v2/{serviceName}/*` - Public service endpoints
+- **Admin API**: `/admin-api/v2/*` - JWT-protected administrative operations
+- **Documentation API**: `/api/docs/{serviceName}` - Service-specific documentation
+
+### 🛡️ Enterprise Security
+
+- **JWT Authentication** - Industry-standard token-based authentication
+- **Admin Protection** - All administrative operations require valid JWT tokens
+- **Service-Level Security** - Optional JWT authentication per service
+- **Database Isolation** - Secure SQLite-based service management
+
+### ⚡ Performance & Scalability
+
+- **Sub-millisecond** response times
+- **5,000+ operations/sec** throughput
+- **Isolated Workers** - Each service runs in its own Deno Worker
+- **Dynamic Port Allocation** - Automatic port management system
+- **Hot Reload** - Instant service updates in development
+
+### 🎨 Developer Experience
+
+- **Interactive API Documentation** - Swagger UI with live testing
+- **Type-Safe Development** - Full TypeScript support
+- **Comprehensive Testing** - 50+ tests covering all scenarios
+- **Database-Driven Configuration** - No config files needed
+
+## 🏗️ Architecture Overview
 
 ```mermaid
 graph TB
     Client[Client Requests] --> Gateway[NanoEdgeRT Gateway :8000]
     Gateway --> Auth{JWT Auth Required?}
-    Auth -->|Yes| JWT[JWT Validation]
-    Auth -->|No| Router[Request Router]
-    JWT -->|Valid| Router
+    Auth -->|Admin API| JWT[JWT Validation]
+    Auth -->|Service API| ServiceRouter[Service Router]
+    Auth -->|Public| PublicRouter[Public Routes]
+    JWT -->|Valid| AdminRouter[Admin Router]
     JWT -->|Invalid| Error[401 Unauthorized]
     
-    Router --> Health["/health"]
-    Router --> AdminUI["/admin"]
-    Router --> Docs["/docs /swagger"]
-    Router --> AdminAPI["/_admin/*"]
-    Router --> Services[Service Routes]
+    PublicRouter --> Health["/health"]
+    PublicRouter --> Status["/status"]
+    PublicRouter --> Docs["/docs"]
     
-    AdminUI -->|127.0.0.1 Only| Dashboard[Modern Dashboard UI]
-    Docs -->|127.0.0.1 Only| SwaggerUI[Interactive API Docs]
-    AdminAPI -->|127.0.0.1 Only| CRUD[Service CRUD API]
+    AdminRouter --> AdminAPI["/admin-api/v2/*"]
+    ServiceRouter --> ServiceAPI["/api/v2/*"]
+    ServiceRouter --> ServiceDocs["/api/docs/*"]
+    
     AdminAPI --> Database[(SQLite Database)]
+    ServiceAPI --> ServiceManager[Service Manager]
+    ServiceDocs --> SwaggerUI[Swagger UI]
     
-    Services --> Worker1[Service Worker :8001]
-    Services --> Worker2[Service Worker :8002]
-    Services --> WorkerN[Service Worker :800N]
+    ServiceManager --> Worker1[Service Worker :8001]
+    ServiceManager --> Worker2[Service Worker :8002]
+    ServiceManager --> WorkerN[Service Worker :800N]
     
-    subgraph "Database-Driven System"
-        Database --> ServiceTable[Services Table]
-        Database --> ConfigTable[Config Table]
-        ServiceTable --> ServiceRecord1[hello service]
-        ServiceTable --> ServiceRecord2[calculator service]
-        ServiceTable --> ServiceRecordN[custom services...]
+    subgraph "Database Layer"
+        Database --> Services[Services Table]
+        Database --> Config[Config Table]
+        Database --> Ports[Ports Table]
     end
     
-    Worker1 --> ServiceRecord1
-    Worker2 --> ServiceRecord2
-    WorkerN --> ServiceRecordN
+    Worker1 --> ServiceInstance1[hello service]
+    Worker2 --> ServiceInstance2[calculator service]
+    WorkerN --> ServiceInstanceN[custom services...]
 ```
 
 ## 🚀 Quick Start
@@ -69,307 +84,378 @@ graph TB
 
 - [Deno](https://deno.land/) v1.37 or higher
 
-### Installation
+### Installation & Setup
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/lemonhx/nanoedgert.git
-   cd nanoedgert
+   git clone https://github.com/LemonHX/NanoEdgeRT.git
+   cd NanoEdgeRT
    ```
 
-2. **Initialize the database:**
+2. **Start the server:**
    ```bash
    deno task start
    ```
-   _This will automatically initialize the SQLite database with default services._
 
-3. **Visit the documentation:**
-   Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to see the **interactive Swagger UI** with live API testing.
+   The server will automatically:
+   - Initialize SQLite database
+   - Create default services (hello, calculator)
+   - Start on port 8000
 
-4. **Access the admin interface:**
-   Open [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin) for the **modern management UI** to control services.
-
-5. **Test the APIs:**
+3. **Verify installation:**
    ```bash
-   # Test hello service
-   curl "http://0.0.0.0:8000/hello?name=World"
-
-   # Test calculator service
-   curl "http://0.0.0.0:8000/calculator?a=10&b=5&op=add"
-
    # Check system health
-   curl "http://0.0.0.0:8000/health"
+   curl http://localhost:8000/health
+
+   # Test default service
+   curl "http://localhost:8000/api/v2/hello?name=World"
    ```
 
-## 📖 Usage
+4. **Access documentation:**
+   - **Interactive API Docs**: http://127.0.0.1:8000/docs
+   - **Service Documentation**: http://127.0.0.1:8000/api/docs/hello
 
-### Dynamic Service Management
+## 📖 API Reference
 
-NanoEdgeRT now uses a **database-driven approach** for service management instead of file-based configuration.
+### 🌐 Public Endpoints
 
-#### Adding Services via API
+| Endpoint        | Method | Description                   | Example                                   |
+| --------------- | ------ | ----------------------------- | ----------------------------------------- |
+| `/health`       | GET    | System health check           | `curl http://localhost:8000/health`       |
+| `/status`       | GET    | Detailed system status        | `curl http://localhost:8000/status`       |
+| `/docs`         | GET    | Interactive API documentation | Open in browser                           |
+| `/openapi.json` | GET    | OpenAPI specification         | `curl http://localhost:8000/openapi.json` |
 
-#### Managing Services via Admin UI
+### 🔗 Service API (v2)
 
-1. **Open the Admin Dashboard:**
-   ```
-   http://127.0.0.1:8000/admin
-   ```
+| Endpoint                          | Methods                | Description                 | Example                                             |
+| --------------------------------- | ---------------------- | --------------------------- | --------------------------------------------------- |
+| `/api/v2/{serviceName}/*`         | GET, POST, PUT, DELETE | Forward requests to service | `curl http://localhost:8000/api/v2/hello`           |
+| `/api/docs/{serviceName}`         | GET                    | Service documentation       | `curl http://localhost:8000/api/docs/hello`         |
+| `/api/docs/openapi/{serviceName}` | GET                    | Service OpenAPI schema      | `curl http://localhost:8000/api/docs/openapi/hello` |
 
-2. **Use the interface to:**
-   - ✅ Create new services with code editor
-   - 🔄 Enable/disable services
-   - 📝 Edit service code in real-time
-   - 🗑️ Delete services
-   - 👀 Monitor service status
+### 🛡️ Admin API (v2) - JWT Required
 
-### Database Configuration
+All admin endpoints require JWT authentication:
 
-Services are now stored in a **SQLite database** instead of config.json files. The database contains:
+```bash
+# Set your JWT token
+export JWT_TOKEN="your-admin-jwt-token"
+```
 
-#### Default Configuration
+#### Service Management
 
-The system automatically initializes with these default settings:
+| Endpoint                        | Method | Description          | Example                                                                                                       |
+| ------------------------------- | ------ | -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/admin-api/v2/services`        | GET    | List all services    | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services`                      |
+| `/admin-api/v2/services`        | POST   | Create new service   | See [Service Creation](#-service-creation)                                                                    |
+| `/admin-api/v2/services/{name}` | GET    | Get specific service | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/hello`                |
+| `/admin-api/v2/services/{name}` | PUT    | Update service       | See [Service Updates](#-service-updates)                                                                      |
+| `/admin-api/v2/services/{name}` | DELETE | Delete service       | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/my-service` |
+
+#### Configuration Management
+
+| Endpoint                     | Method | Description           | Example                                                                                          |
+| ---------------------------- | ------ | --------------------- | ------------------------------------------------------------------------------------------------ |
+| `/admin-api/v2/config`       | GET    | Get all configuration | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/config`           |
+| `/admin-api/v2/config/{key}` | GET    | Get config value      | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/config/main_port` |
+| `/admin-api/v2/config/{key}` | PUT    | Update config value   | See [Configuration](#-configuration)                                                             |
+
+## 🔧 Service Management
+
+### 🆕 Service Creation
+
+Create a new service with the Admin API:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-awesome-service",
+    "code": "export default async function handler(req) {\n  const url = new URL(req.url);\n  return new Response(JSON.stringify({\n    message: \"Hello from my awesome service!\",\n    method: req.method,\n    path: url.pathname,\n    timestamp: new Date().toISOString()\n  }), {\n    status: 200,\n    headers: { \"Content-Type\": \"application/json\" }\n  });\n}",
+    "enabled": true,
+    "jwt_check": false,
+    "permissions": {
+      "read": [],
+      "write": [],
+      "env": [],
+      "run": []
+    },
+    "schema": "{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"My Awesome Service\",\"version\":\"1.0.0\"}}"
+  }' \
+  http://localhost:8000/admin-api/v2/services
+```
+
+### 🔄 Service Updates
+
+Update an existing service:
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "enabled": false,
+    "jwt_check": true
+  }' \
+  http://localhost:8000/admin-api/v2/services/my-awesome-service
+```
+
+### 🔒 JWT Authentication for Services
+
+Enable JWT authentication for a service:
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"jwt_check": true}' \
+  http://localhost:8000/admin-api/v2/services/protected-service
+```
+
+Then access the service with JWT:
+
+```bash
+curl -H "Authorization: Bearer $JWT_TOKEN" \
+     http://localhost:8000/api/v2/protected-service
+```
+
+### 📋 Service Configuration Schema
 
 ```typescript
-{
-  available_port_start: 8001,
-  available_port_end: 8999,
-  main_port: 8000,
-  jwt_secret: "your-secret-key", // Change in production!
-  host: "0.0.0.0"
+interface ServiceConfig {
+  name: string; // Unique service name
+  code: string; // JavaScript/TypeScript code
+  enabled: boolean; // Whether service is active
+  jwt_check: boolean; // Require JWT for access
+  permissions: {
+    read: string[]; // File read permissions
+    write: string[]; // File write permissions
+    env: string[]; // Environment variables
+    run: string[]; // Executable permissions
+  };
+  schema?: string; // OpenAPI schema (JSON string)
 }
 ```
 
-#### Service Configuration Options
+## ⚙️ Configuration
 
-| Option        | Type    | Description                             |
-| ------------- | ------- | --------------------------------------- |
-| `name`        | string  | Unique service name                     |
-| `code`        | string  | Service JavaScript/TypeScript code      |
-| `enabled`     | boolean | Whether the service is enabled          |
-| `jwt_check`   | boolean | Whether JWT authentication is required  |
-| `permissions` | object  | Deno permissions for the service worker |
+### 🔧 System Configuration
 
-#### Permission Structure
+Update system configuration via Admin API:
+
+```bash
+# Update main port
+curl -X PUT \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "8080"}' \
+  http://localhost:8000/admin-api/v2/config/main_port
+
+# Update JWT secret
+curl -X PUT \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "your-super-secure-secret"}' \
+  http://localhost:8000/admin-api/v2/config/jwt_secret
+
+# Update port range
+curl -X PUT \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "9000"}' \
+  http://localhost:8000/admin-api/v2/config/available_port_start
+```
+
+### 📊 Configuration Keys
+
+| Key                    | Type   | Description              | Default                    |
+| ---------------------- | ------ | ------------------------ | -------------------------- |
+| `main_port`            | number | Main server port         | 8000                       |
+| `available_port_start` | number | Service port range start | 8001                       |
+| `available_port_end`   | number | Service port range end   | 8999                       |
+| `jwt_secret`           | string | JWT signing secret       | "default-secret-change-me" |
+
+## 🔐 Authentication & Security
+
+### 🎫 JWT Authentication
+
+NanoEdgeRT v2 uses JWT tokens for admin API access and optional service protection.
+
+#### Admin JWT Token Structure
 
 ```typescript
-{
-  "read": ["./data"],      // File read permissions
-  "write": ["./tmp"],      // File write permissions  
-  "env": ["DATABASE_URL"], // Environment variable access
-  "run": []               // Subprocess execution permissions
+interface JWTPayload {
+  sub: string; // Subject (user ID)
+  exp: number; // Expiration timestamp
+  [key: string]: any; // Additional custom claims
 }
 ```
 
-## 🔐 Authentication
-
-NanoEdgeRT supports JWT-based authentication for protecting sensitive services.
-
-### Enabling JWT Authentication
-
-1. **Set a secure JWT secret in the database:**
-   ```bash
-   # Update JWT secret via API
-   curl -X PUT http://127.0.0.1:8000/_admin/api/config/jwt_secret \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer ADMIN_TOKEN" \
-     -d '{"value": "your-super-secure-secret-key"}'
-   ```
-
-2. **Enable JWT check for a service:**
-   ```bash
-   # Update service to require JWT
-   curl -X PUT http://127.0.0.1:8000/_admin/api/services/protected-service \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer ADMIN_TOKEN" \
-     -d '{"jwt_check": true}'
-   ```
-
-3. **Make authenticated requests:**
-   ```bash
-   curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-        http://0.0.0.0:8000/protected-service
-   ```
-
-### JWT Token Format
-
-The JWT token should include the following claims:
+#### Example JWT Payload
 
 ```json
 {
-  "sub": "user-id",
-  "exp": 1640995200,
-  "iat": 1640908800,
-  "iss": "nanoedgert"
+  "sub": "admin-user",
+  "exp": 1722556800,
+  "iat": 1722470400,
+  "role": "admin",
+  "permissions": ["service:create", "service:delete", "config:update"]
 }
 ```
 
-## 🎨 Management UI
+### 🛡️ Security Best Practices
 
-### Modern Dashboard Interface
+1. **Change Default JWT Secret**: Update the JWT secret in production
+2. **Use Strong Tokens**: Generate cryptographically secure JWT tokens
+3. **Set Token Expiration**: Use reasonable expiration times
+4. **Service Permissions**: Grant minimal required permissions to services
+5. **Network Security**: Use HTTPS in production
 
-**🎯 Admin Dashboard**: [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin)
+## 📚 Service Development
 
-NanoEdgeRT features a **beautiful, modern web interface** inspired by **Vercel** and **Next.js** design systems, built with pure HTML and CSS for maximum performance and zero dependencies.
+### 🖥️ Service Template
 
-### ✨ Dashboard Features
+Create services using this template:
 
-- 🎨 **Modern Design** - Vercel-inspired dark theme with gradients and animations
-- 📊 **Real-time Stats** - Live service counts, status monitoring, and system health
-- 🔧 **Service Management** - Start/stop services with one-click controls
-- 🔄 **Auto-refresh** - Dashboard updates every 30 seconds automatically
-- 📱 **Responsive Design** - Perfect on desktop, tablet, and mobile devices
-- 🚀 **Instant Actions** - Real-time feedback with toast notifications
-- 🔗 **Quick Links** - Direct access to service endpoints and API docs
+```javascript
+export default async function handler(req) {
+  const url = new URL(req.url);
+  const method = req.method;
 
-### 🎯 Dashboard Sections
+  // Handle different HTTP methods
+  switch (method) {
+    case "GET":
+      return handleGet(url);
+    case "POST":
+      return handlePost(req);
+    default:
+      return new Response("Method not allowed", { status: 405 });
+  }
+}
 
-| **Section**       | **Description**                            | **Features**                          |
-| ----------------- | ------------------------------------------ | ------------------------------------- |
-| 📈 **Stats Grid** | System overview with key metrics           | Total services, running count, ports  |
-| 🔧 **Services**   | Interactive service cards with controls    | Start/stop, status, JWT auth display  |
-| 🌐 **Quick Nav**  | Fast access to endpoints and documentation | Service links, API docs, health check |
-| ⚡ **Live Data**  | Real-time updates without page refresh     | Auto-refresh, instant status updates  |
+async function handleGet(url) {
+  const name = url.searchParams.get("name") || "World";
 
-### 🛡️ Security Design
+  return new Response(
+    JSON.stringify({
+      message: `Hello, ${name}!`,
+      timestamp: new Date().toISOString(),
+      path: url.pathname,
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
 
-The admin interface implements **defense-in-depth** security:
+async function handlePost(req) {
+  const body = await req.json();
 
-```mermaid
-graph LR
-    User[User] --> Browser[Browser]
-    Browser --> Check{Host Check}
-    Check -->|127.0.0.1| Allow[Admin UI]
-    Check -->|0.0.0.0| Deny[403 Forbidden]
-    Allow --> JWT[JWT Required for Actions]
-    JWT --> Actions[Service Control]
+  return new Response(
+    JSON.stringify({
+      received: body,
+      processed: true,
+      timestamp: new Date().toISOString(),
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
 ```
 
-## 📊 API Endpoints
+### 📖 OpenAPI Documentation
 
-### 📖 Interactive Documentation
+Add OpenAPI schema to your services for auto-generated documentation:
 
-**🎯 Live Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "My Service",
+    "version": "1.0.0",
+    "description": "A sample service with OpenAPI documentation"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Get greeting",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Name to greet",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "World"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "timestamp": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
-- 🔴 **Try it out**: Test all APIs directly in the browser
-- 📝 **Real-time validation**: Input validation and response examples
-- 🔒 **JWT testing**: Built-in authentication token testing
-- 📋 **Auto-generated**: Always up-to-date with your services
+### 🔒 Service Permissions
 
-### 🔐 Access Control
+Configure fine-grained permissions for your services:
 
-For enhanced security, NanoEdgeRT implements **IP-based access controls**:
+```typescript
+{
+  "permissions": {
+    "read": ["/tmp", "/data"],           // File read access
+    "write": ["/tmp", "/logs"],          // File write access
+    "env": ["DATABASE_URL", "API_KEY"],  // Environment variables
+    "run": ["curl", "git"]               // Executable commands
+  }
+}
+```
 
-| **Endpoint Type**      | **Access**  | **Interface**  | **Examples**                       |
-| ---------------------- | ----------- | -------------- | ---------------------------------- |
-| 🔧 **Admin/Docs**      | `127.0.0.1` | Localhost only | `/docs`, `/swagger`, `/_admin/*`   |
-| 🌐 **Public Services** | `0.0.0.0`   | All interfaces | `/hello`, `/calculator`, `/health` |
+## 🧪 Testing & Development
 
-**Why this design?**
-
-- 🛡️ **Security**: Admin functions only accessible from the server itself
-- 🌍 **Accessibility**: Services available to all clients (local and remote)
-- ⚡ **Performance**: No overhead for public service calls
-- 🔒 **Best Practice**: Follows enterprise security patterns
-
-### System Endpoints
-
-| Endpoint                | Method | Description                        | Access           | Performance                |
-| ----------------------- | ------ | ---------------------------------- | ---------------- | -------------------------- |
-| `/`                     | GET    | Welcome message and service list   | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
-| `/static/*`             | GET    | Serve static files                 | `0.0.0.0:8000`   | **~67µs** (14,990 ops/sec) |
-| `/health`               | GET    | Health check and service status    | `0.0.0.0:8000`   | **~73µs** (13,730 ops/sec) |
-| `/admin`                | GET    | 🎨 **Modern Dashboard UI**         | `127.0.0.1:8000` | **~150µs** (6,600 ops/sec) |
-| `/docs`                 | GET    | 🎨 **Swagger UI documentation**    | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
-| `/swagger`              | GET    | Swagger UI documentation (alias)   | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
-| `/openapi.json`         | GET    | OpenAPI 3.0.3 specification        | `127.0.0.1:8000` | **~166µs** (6,010 ops/sec) |
-| `/doc/:serviceName`     | GET    | 📋 **Service-specific Swagger UI** | `0.0.0.0:8000`   | **~180µs** (5,500 ops/sec) |
-| `/openapi/:serviceName` | GET    | Service OpenAPI schema JSON        | `0.0.0.0:8000`   | **~180µs** (5,500 ops/sec) |
-
-### Dynamic Admin API Endpoints (Authentication Required)
-
-| Endpoint                             | Method | Description                    | Access           |
-| ------------------------------------ | ------ | ------------------------------ | ---------------- |
-| `/_admin/api/services`               | GET    | List all services with details | `127.0.0.1:8000` |
-| `/_admin/api/services`               | POST   | Create a new service           | `127.0.0.1:8000` |
-| `/_admin/api/services/{serviceName}` | GET    | Get specific service details   | `127.0.0.1:8000` |
-| `/_admin/api/services/{serviceName}` | PUT    | Update service configuration   | `127.0.0.1:8000` |
-| `/_admin/api/services/{serviceName}` | DELETE | Delete a service               | `127.0.0.1:8000` |
-| `/_admin/api/config/{key}`           | GET    | Get configuration value        | `127.0.0.1:8000` |
-| `/_admin/api/config/{key}`           | PUT    | Update configuration value     | `127.0.0.1:8000` |
-| `/_admin/start/{serviceName}`        | POST   | Start a specific service       | `127.0.0.1:8000` |
-| `/_admin/stop/{serviceName}`         | POST   | Stop a specific service        | `127.0.0.1:8000` |
-
-### Service Endpoints
-
-All enabled services are automatically available at `0.0.0.0:8000`:
-
-- `/{serviceName}` - Root service endpoint (e.g., `http://0.0.0.0:8000/hello`)
-- `/{serviceName}/*` - Service sub-routes (e.g., `http://0.0.0.0:8000/calculator/add`)
-
-## 🧪 Testing
-
-NanoEdgeRT includes comprehensive test coverage:
+### 🏃 Running Tests
 
 ```bash
 # Run all tests
 deno task test
 
-# Run specific test suites
-deno task test:unit          # Unit tests
-deno task test:integration   # Integration tests
+# Run unit tests only
+deno task test:unit
 
-# Run tests in watch mode
-deno task test:watch
+# Run integration tests only
+deno task test:integration
 
-# Run benchmarks for performance data
-deno task bench
+# Run with coverage
+deno test --coverage=coverage --allow-all
 ```
 
-### Test Coverage
-
-- **Unit Tests**: Test individual components in isolation
-- **Integration Tests**: Test component interactions
-- **Benchmarks**: Performance testing
-
-### 🎯 Test Results
-
-**🏆 29 tests passed | 0 failed | 100% success rate 🏆**
-
-| **Test Suite**           | **Tests**    | **Status**  | **Coverage**           | **Description**                        |
-| ------------------------ | ------------ | ----------- | ---------------------- | -------------------------------------- |
-| 🧪 **Unit Tests**        | **27/27**    | ✅ **100%** | Individual components  | Config, Auth, Swagger, Service Manager |
-| 🔗 **Integration Tests** | **2/2**      | ✅ **100%** | Component interactions | Server startup, Service communication  |
-| **📊 TOTAL**             | **🎯 29/29** | **✅ 100%** | **Complete coverage**  | **Database-driven system operational** |
-
-#### 📋 Detailed Test Breakdown
-
-| **Component**             | **Test File**             | **Tests** | **Status** | **Key Features Tested**                       |
-| ------------------------- | ------------------------- | --------- | ---------- | --------------------------------------------- |
-| 🗄️ **Database Config**    | `database_config_test.ts` | 8/8 ✅    | **100%**   | SQLite operations, CRUD, Schema validation    |
-| ⚙️ **Config Management**  | `config_test.ts`          | 3/3 ✅    | **100%**   | Configuration loading, Environment variables  |
-| 🔐 **JWT Authentication** | `auth_test.ts`            | 6/6 ✅    | **100%**   | Token validation, Security, Error handling    |
-| 📖 **Swagger Generation** | `swagger_test.ts`         | 6/6 ✅    | **100%**   | OpenAPI spec, HTML generation, Service docs   |
-| 🏭 **Service Manager**    | `service_manager_test.ts` | 4/4 ✅    | **100%**   | Worker management, Port allocation, Lifecycle |
-| 🚀 **Full System**        | `nanoedge_test.ts`        | 2/2 ✅    | **100%**   | Server startup, Database integration          |
-
-#### 🚀 Performance Test Results
-
-| **Benchmark Category**   | **Tests** | **Best Performance**       | **Status**         |
-| ------------------------ | --------- | -------------------------- | ------------------ |
-| 🏠 **Service Calls**     | 3/3 ✅    | **174.7µs** (Calculator)   | **Excellent**      |
-| 🛠️ **System Operations** | 4/4 ✅    | **66.7µs** (Welcome)       | **Outstanding**    |
-| ⚡ **Concurrent Load**   | 2/2 ✅    | **896.3µs** (10x requests) | **Exceptional**    |
-| 🔧 **Internal Systems**  | 3/3 ✅    | **1.7µs** (URL parsing)    | **Lightning Fast** |
-
-## 🔧 Development
-
-### Development Mode
+### 🔧 Development Commands
 
 ```bash
-# Start with auto-reload
-deno task dev
+# Start development server
+deno task start
 
 # Format code
 deno task fmt
@@ -379,154 +465,259 @@ deno task lint
 
 # Type check
 deno task check
+
+# Pre-commit checks
+deno task precommit
+```
+
+### 📊 Performance Testing
+
+Test NanoEdgeRT performance:
+
+```bash
+# Simple load test
+curl -w "@curl-format.txt" -s -o /dev/null http://localhost:8000/api/v2/hello
+
+# Benchmark with Apache Bench
+ab -n 1000 -c 10 http://localhost:8000/api/v2/hello
+
+# Concurrent requests test
+for i in {1..100}; do
+  curl -s http://localhost:8000/api/v2/hello &
+done
+wait
 ```
 
 ## 🚀 Deployment
 
-### Environment Variables
+### 🏭 Production Setup
 
-| Variable     | Description        | Default           |
-| ------------ | ------------------ | ----------------- |
-| `JWT_SECRET` | JWT signing secret | Config file value |
-| `PORT`       | Main server port   | 8000              |
+1. **Compile to executable** (optional):
+   ```bash
+   deno compile --allow-all --output nanoedgert src/nanoedge.ts
+   ```
 
-### Docker Deployment
+2. **Set environment variables**:
+   ```bash
+   export JWT_SECRET="your-production-secret"
+   export DATABASE_PATH="/var/lib/nanoedgert/database.db"
+   ```
+
+3. **Start with custom database**:
+   ```bash
+   deno run --allow-all src/nanoedge.ts /path/to/production.db
+   ```
+
+### 🐳 Docker Deployment
 
 ```dockerfile
-FROM denoland/deno:1.37.0
+FROM denoland/deno:alpine
 
 WORKDIR /app
 COPY . .
-
-RUN deno cache main.ts
+RUN deno cache src/nanoedge.ts
 
 EXPOSE 8000
-
-CMD ["deno", "run", "--allow-all", "main.ts"]
+CMD ["deno", "run", "--allow-all", "src/nanoedge.ts"]
 ```
 
-### Production Configuration
+### ☁️ Production Configuration
 
-```typescript
-// Database configuration is now managed via REST API
-// Update production settings via:
+```bash
+# Production environment setup
+curl -X PUT \
+  -H "Authorization: Bearer $PROD_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "production-super-secure-secret"}' \
+  https://your-domain.com/admin-api/v2/config/jwt_secret
 
-// Set JWT secret
-PUT /_admin/api/config/jwt_secret
-{
-  "value": "use-environment-variable-in-production"
-}
+# Configure production port
+curl -X PUT \
+  -H "Authorization: Bearer $PROD_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "80"}' \
+  https://your-domain.com/admin-api/v2/config/main_port
+```
 
-// Set port configuration  
-PUT /_admin/api/config/main_port
-{
-  "value": "8000"
-}
+## 🔧 API Client Examples
 
-// Create production service
-POST /_admin/api/services
-{
-  "name": "production-service",
-  "code": "export default async function handler(req) { /* production code */ }",
-  "enabled": true,
-  "jwt_check": true,
-  "permissions": {
-    "read": ["./data"],
-    "write": ["./logs"],
-    "env": ["DATABASE_URL", "API_KEY"],
-    "run": []
+### 📱 JavaScript Client
+
+```javascript
+class NanoEdgeRTClient {
+  constructor(baseUrl, jwtToken = null) {
+    this.baseUrl = baseUrl;
+    this.jwtToken = jwtToken;
+  }
+
+  async callService(serviceName, path = "", options = {}) {
+    const url = `${this.baseUrl}/api/v2/${serviceName}${path}`;
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...(this.jwtToken ? { "Authorization": `Bearer ${this.jwtToken}` } : {}),
+      },
+    });
+  }
+
+  async createService(serviceConfig) {
+    return fetch(`${this.baseUrl}/admin-api/v2/services`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${this.jwtToken}`,
+      },
+      body: JSON.stringify(serviceConfig),
+    });
+  }
+
+  async getServices() {
+    const response = await fetch(`${this.baseUrl}/admin-api/v2/services`, {
+      headers: { "Authorization": `Bearer ${this.jwtToken}` },
+    });
+    return response.json();
   }
 }
+
+// Usage
+const client = new NanoEdgeRTClient("http://localhost:8000", "your-jwt-token");
+
+// Call a service
+const response = await client.callService("hello", "?name=Developer");
+const data = await response.json();
+
+// Create a new service
+await client.createService({
+  name: "api-client-service",
+  code: 'export default async function handler(req) { return new Response("Hello from API!"); }',
+  enabled: true,
+  jwt_check: false,
+  permissions: { read: [], write: [], env: [], run: [] },
+});
 ```
 
-## 📈 Performance
+### 🐍 Python Client
 
-### 🚀 Benchmark Results
+```python
+import requests
+import json
 
-**Measured on Apple M4 with Deno 2.4.2**
+class NanoEdgeRTClient:
+    def __init__(self, base_url, jwt_token=None):
+        self.base_url = base_url
+        self.jwt_token = jwt_token
+        self.session = requests.Session()
+        if jwt_token:
+            self.session.headers.update({'Authorization': f'Bearer {jwt_token}'})
 
-| **Service Type**               | **Response Time** | **Throughput**     | **Notes**                        |
-| ------------------------------ | ----------------- | ------------------ | -------------------------------- |
-| 🏠 **Hello Service**           | **186.4 µs**      | **5,365 ops/sec**  | Simple service with query params |
-| 🧮 **Calculator (Add)**        | **174.7 µs**      | **5,723 ops/sec**  | Mathematical operations          |
-| 📊 **Calculator (Expression)** | **187.2 µs**      | **5,341 ops/sec**  | Complex expression parsing       |
-| ❤️ **Health Check**            | **72.8 µs**       | **13,730 ops/sec** | System status monitoring         |
-| 👋 **Welcome Endpoint**        | **66.7 µs**       | **14,990 ops/sec** | Service discovery                |
-| 📋 **OpenAPI Generation**      | **166.4 µs**      | **6,010 ops/sec**  | Live documentation               |
+    def call_service(self, service_name, path='', **kwargs):
+        url = f"{self.base_url}/api/v2/{service_name}{path}"
+        return self.session.get(url, **kwargs)
 
-### ⚡ Concurrent Performance
+    def create_service(self, service_config):
+        url = f"{self.base_url}/admin-api/v2/services"
+        return self.session.post(url, json=service_config)
 
-| **Load Test**                    | **Total Time** | **Per Request** | **Throughput**     |
-| -------------------------------- | -------------- | --------------- | ------------------ |
-| 🔥 **10x Hello Concurrent**      | **896.3 µs**   | **~90 µs**      | **11,157 ops/sec** |
-| 🔥 **10x Calculator Concurrent** | **942.3 µs**   | **~94 µs**      | **10,612 ops/sec** |
+    def get_services(self):
+        url = f"{self.base_url}/admin-api/v2/services"
+        response = self.session.get(url)
+        return response.json()
 
-### 🛠️ System Performance
+# Usage
+client = NanoEdgeRTClient('http://localhost:8000', 'your-jwt-token')
 
-| **Operation**             | **Time**    | **Throughput**      | **Use Case**     |
-| ------------------------- | ----------- | ------------------- | ---------------- |
-| ⚙️ **Config Parsing**     | **41.3 µs** | **24,230 ops/sec**  | Startup & reload |
-| 📖 **Swagger Generation** | **70.5 µs** | **14,180 ops/sec**  | Documentation    |
-| 🔗 **URL Parsing**        | **1.7 µs**  | **592,600 ops/sec** | Request routing  |
-| 🔑 **JWT Creation**       | **2.1 µs**  | **467,800 ops/sec** | Authentication   |
+# Call a service
+response = client.call_service('hello', '?name=Python')
+print(response.json())
 
-### Optimization Tips
+# Create a service
+service_config = {
+    'name': 'python-service',
+    'code': 'export default async function handler(req) { return new Response("Hello from Python!"); }',
+    'enabled': True,
+    'jwt_check': False,
+    'permissions': {'read': [], 'write': [], 'env': [], 'run': []}
+}
+client.create_service(service_config)
+```
 
-1. **Database-First Design**: Services are managed through SQLite database with full CRUD operations
-2. **Dynamic API**: Real-time service management via REST API under `/_admin` endpoints
-3. **Worker Isolation**: Each service runs in isolated Deno Workers with controlled permissions
-4. **Test Database Isolation**: Each test uses isolated database instances for reliable testing
+## 📈 Monitoring & Observability
 
-## 🛣️ Roadmap
+### 📊 Health Monitoring
 
-- [ ] **Service Metrics** - Built-in monitoring and metrics collection
-- [ ] **Service Templates** - Pre-built service templates for common use cases
-- [ ] **WebSocket Support** - Real-time communication support
-- [ ] **Service Versioning** - Multiple versions of services running simultaneously
+```bash
+# Basic health check
+curl http://localhost:8000/health
+
+# Detailed status with metrics
+curl http://localhost:8000/status | jq
+```
+
+### 📋 Service Metrics
+
+Monitor running services:
+
+```bash
+# Get all services status
+curl -H "Authorization: Bearer $JWT_TOKEN" \
+     http://localhost:8000/admin-api/v2/services | jq '.services[] | {name, status, port}'
+
+# Get specific service details
+curl -H "Authorization: Bearer $JWT_TOKEN" \
+     http://localhost:8000/admin-api/v2/services/hello | jq
+```
+
+### 🚨 Error Handling
+
+NanoEdgeRT provides comprehensive error responses:
+
+```typescript
+interface ErrorResponse {
+  error: string; // Error message
+  message?: string; // Detailed message
+  details?: string; // Additional details
+}
+```
+
+Common HTTP status codes:
+
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request
+- `401` - Unauthorized (JWT required/invalid)
+- `404` - Service/Resource not found
+- `500` - Internal Server Error
+- `502` - Service Unavailable
+- `503` - Service Failed to Start
 
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Development Setup
+### 🛠️ Development Setup
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run tests: `deno task test`
-5. Commit changes: `git commit -m 'Add amazing feature'`
-6. Push to branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/NanoEdgeRT.git`
+3. Create a feature branch: `git checkout -b my-feature`
+4. Make your changes
+5. Run tests: `deno task test`
+6. Commit and push: `git commit -am "Add feature" && git push origin my-feature`
+7. Create a Pull Request
 
-### Code Style
+## 📝 License
 
-- Use TypeScript with strict type checking
-- Follow Deno's formatting standards (`deno task fmt`)
-- Add comprehensive tests for new features with database isolation
-- Update documentation for API changes
-- Test database operations with isolated test databases
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [Deno](https://deno.land/) for providing an excellent TypeScript runtime
-- [SQLite](https://www.sqlite.org/) for reliable embedded database functionality
-- [Kysely](https://kysely.dev/) for type-safe SQL query building
-- [Swagger UI](https://swagger.io/tools/swagger-ui/) for API documentation
-- The open-source community for inspiration and best practices
-
-## 📞 Support
-
-- 📚 [Documentation](http://127.0.0.1:8000/docs)
-- 🐛 [Issue Tracker](https://github.com/lemonhx/nanoedgert/issues)
-- 💬 [Discussions](https://github.com/lemonhx/nanoedgert/discussions)
-- 📧 [Email Support](mailto:support@nanoedgert.dev)
+- **Deno Team** - For the amazing runtime
+- **Hono** - For the lightweight web framework
+- **Kysely** - For the type-safe SQL builder
+- **Contributors** - For making NanoEdgeRT better
 
 ---
 
-<p align="center">
-  Made with ❤️ by the NanoEdgeRT Team
-</p>
+**Built with ❤️ using Deno and TypeScript**
+
+For more information, visit our [GitHub repository](https://github.com/LemonHX/NanoEdgeRT) or check out the [documentation](https://github.com/LemonHX/NanoEdgeRT/wiki).
