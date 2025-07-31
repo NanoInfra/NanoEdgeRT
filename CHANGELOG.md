@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-08-01
+
+### 🚀 Major Architecture Overhaul
+
+This version represents a complete architectural transformation of NanoEdgeRT, introducing versioned APIs, enhanced authentication, and modernized service management.
+
+### Added
+
+- 🔗 **Versioned API Architecture** - Introduced `/api/v2` and `/admin-api/v2` routes for better API versioning
+- 🔐 **Enhanced JWT Authentication System** - Complete JWT authentication infrastructure with admin-specific tokens
+  - Dedicated admin JWT secret management
+  - JWT payload interface with extensible claims
+  - Middleware-based authentication pipeline
+- 🛡️ **Security-First Admin API** - New `/admin-api/v2` endpoints with mandatory JWT authentication
+  - All admin operations now require authentication
+  - Secure service and configuration management
+  - JWT-protected CRUD operations
+- 📊 **Advanced Database Context Management** - Improved database context injection across all routes
+- 🔧 **Modernized Service Architecture** - Updated all service routes to v2 API structure
+- 📚 **Enhanced OpenAPI 3.0.3 Specification** - Complete API documentation with v2 endpoints
+  - Security schemas for JWT authentication
+  - Comprehensive request/response examples
+  - Admin API documentation
+- 🧪 **Comprehensive Test Coverage** - Extensive test suite for v2 architecture
+  - Integration tests for admin API authentication
+  - Unit tests for JWT middleware
+  - Service lifecycle testing with v2 routes
+
+### Changed
+
+- 🔄 **API Route Structure** - Migrated from flat routes to versioned structure
+  - Service routes: `/{serviceName}` → `/api/v2/{serviceName}/{path}`
+  - Admin routes: `/_admin/api` → `/admin-api/v2`
+- 🔒 **Authentication Requirements** - All admin operations now require JWT authentication
+- 📋 **Database API Integration** - Complete integration with database-driven API management
+- 🏗️ **Service Manager State** - Enhanced service manager with v2 API compatibility
+- 📖 **Documentation Structure** - Updated all documentation to reflect v2 API endpoints
+
+### Security Enhancements
+
+- 🛡️ **Mandatory Admin Authentication** - All admin endpoints require valid JWT tokens
+- 🔐 **JWT Secret Management** - Dedicated admin JWT secret handling
+- 🚫 **Unauthorized Access Prevention** - Comprehensive 401 error handling
+- 🔍 **Token Validation Pipeline** - Robust JWT verification with error handling
+
+### Developer Experience
+
+- 📊 **Interactive API Testing** - Enhanced Swagger UI with authentication support
+- 🔧 **Type-Safe Interfaces** - Improved TypeScript interfaces for JWT payloads
+- 🧪 **Enhanced Testing** - Comprehensive test coverage for authentication flows
+- 📚 **Updated Documentation** - Complete API documentation with v2 examples
+
+### Technical Details
+
+- All service endpoints migrated to `/api/v2/{serviceName}/*` pattern
+- Admin endpoints consolidated under `/admin-api/v2/*` with JWT protection
+- OpenAPI schema updated to version 2.0.0 with security definitions
+- Database context middleware applied consistently across all routes
+- JWT authentication middleware with proper error handling
+- Service documentation routes updated for v2 compatibility
+
+### Breaking Changes
+
+⚠️ **API Version Upgrade**: This is a major version bump with breaking changes:
+
+- **Service Endpoints**: Update from `/{serviceName}` to `/api/v2/{serviceName}`
+- **Admin Endpoints**: Update from `/_admin/api` to `/admin-api/v2`
+- **Authentication Required**: All admin operations now require JWT authentication
+- **Documentation Routes**: Service docs moved to `/api/docs/{serviceName}`
+
+### Migration Guide
+
+1. **Update Service Calls**: Replace `/{serviceName}` with `/api/v2/{serviceName}`
+2. **Update Admin Calls**: Replace `/_admin/api` with `/admin-api/v2`
+3. **Add Authentication**: Include JWT tokens in Authorization headers for admin operations
+4. **Update Documentation Access**: Use `/api/docs/{serviceName}` for service documentation
+
 ## [1.2.0] - 2025-07-30
 
 ### Added
