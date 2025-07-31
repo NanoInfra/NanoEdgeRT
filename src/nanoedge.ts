@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { swaggerUI } from "@hono/swagger-ui";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { createOrLoadDatabase } from "../database/sqlite3.ts";
-import { createDatabaseContext } from "../database/dto.ts";
+import { createDatabaseContext, DatabaseContext } from "../database/dto.ts";
 import {
   createServiceManagerState,
   getAllServices,
@@ -17,12 +17,13 @@ import { Context } from "hono";
 import openapi from "./openapi.ts";
 
 export async function createNanoEdgeRT(
-  dbPath?: string,
+  db: string | DatabaseContext,
 ): Promise<
   [Hono, number, AbortController, ServiceManagerState]
 > {
-  const db = await createOrLoadDatabase(dbPath || ":memory:");
-  const dbContext = await createDatabaseContext(db);
+  const dbContext = typeof db === "string"
+    ? await createDatabaseContext(await createOrLoadDatabase(db))
+    : db;
   const serviceManagerState = createServiceManagerState(dbContext);
   const startTime = new Date().toISOString();
   const app = new Hono();
@@ -60,12 +61,12 @@ export async function createNanoEdgeRT(
 }
 
 export async function startNanoEdgeRT(
-  dbPath?: string,
-): Promise<[AbortController, ServiceManagerState]> {
+  db: string | DatabaseContext = ":memory:",
+): Promise<void> {
   console.log("🚀 Starting NanoEdgeRT...");
 
   // Start main server
-  const [honoServer, port, ac, sm] = await createNanoEdgeRT(dbPath);
+  const [honoServer, port, ac, sm] = await createNanoEdgeRT(db);
   console.log(`🌐 NanoEdgeRT server starting on http://0.0.0.0:${port}`);
 
   Deno.serve({
@@ -74,54 +75,34 @@ export async function startNanoEdgeRT(
     signal: ac.signal,
   }, honoServer.fetch);
 
-  console.log(`✅ NanoEdgeRT server running on port ${port}`);
-  return [ac, sm];
-}
+  ac.signal.addEventListener("abort", () => {
+    console.log("🛑 NanoEdgeRT server stopped gracefully.");
+    stopAllServices(sm).catch(console.error);
+    console.log("✅ NanoEdgeRT stopped");
+  });
 
-export function stopNanoEdgeRT(ac: AbortController, sm: ServiceManagerState): void {
-  console.log("🛑 Stopping NanoEdgeRT...");
-  ac.abort();
-  // Note: stopAllServices is now async, but we can't await in stop()
-  // Consider making this async in the future
-  stopAllServices(sm).catch(console.error);
-  console.log("✅ NanoEdgeRT stopped");
-}
-
-export function gracefulShutdown(
-  ac: AbortController,
-  sm: ServiceManagerState,
-): Promise<void> {
-  let shutdown = false;
-  // Listen for graceful shutdown signal
   globalThis.addEventListener("beforeunload", () => {
     console.log("🛑 Graceful shutdown initiated...");
-    shutdown = true;
-    stopNanoEdgeRT(ac, sm);
+    stopNanoEdgeRT(ac);
   });
 
   globalThis.addEventListener("SIGINT", () => {
     console.log("🛑 SIGINT received, initiating graceful shutdown...");
-    shutdown = true;
-    stopNanoEdgeRT(ac, sm);
+    stopNanoEdgeRT(ac);
   });
 
-  return new Promise((resolve) => {
-    const checkShutdown = () => {
-      if (shutdown) {
-        resolve();
-      } else {
-        setTimeout(checkShutdown, 5000);
-      }
-    };
-    checkShutdown();
-  });
+  console.log(`✅ NanoEdgeRT server running on port ${port}`);
+  console.log("📚 API documentation available at /docs");
 }
 
-export async function server(dbPath?: string): Promise<void> {
-  const [ac, sm] = await startNanoEdgeRT(dbPath);
+function stopNanoEdgeRT(ac: AbortController): void {
+  console.log("🛑 Stopping NanoEdgeRT...");
+  ac.abort();
+}
+
+export async function server(dbPath?: string | DatabaseContext): Promise<void> {
+  await startNanoEdgeRT(dbPath);
   console.log("NanoEdgeRT server is running. Press Ctrl+C to stop.");
-  await gracefulShutdown(ac, sm);
-  console.log("NanoEdgeRT server has been stopped gracefully.");
   Deno.exit(0);
 }
 

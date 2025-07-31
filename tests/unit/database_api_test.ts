@@ -2,10 +2,10 @@ import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert
 import { Hono } from "hono";
 import { databaseMiddleware, setupAPIRoutes } from "../../database/api.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
-import { createOrLoadDatabase } from "../../database/sqlite3.ts";
+import { createIsolatedDb } from "../test_utils.ts";
 
 Deno.test("databaseMiddleware - should inject database context", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
 
   const middleware = databaseMiddleware(dbContext);
@@ -14,7 +14,7 @@ Deno.test("databaseMiddleware - should inject database context", async () => {
 });
 
 Deno.test("setupAPIRoutes - should setup all routes", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -25,7 +25,7 @@ Deno.test("setupAPIRoutes - should setup all routes", async () => {
 });
 
 Deno.test("getAllServicesHandler - should return services", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -40,7 +40,7 @@ Deno.test("getAllServicesHandler - should return services", async () => {
 });
 
 Deno.test("getServiceHandler - should return 404 for nonexistent service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -54,7 +54,7 @@ Deno.test("getServiceHandler - should return 404 for nonexistent service", async
 });
 
 Deno.test("getServiceHandler - should return service when it exists", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -83,7 +83,7 @@ Deno.test("getServiceHandler - should return service when it exists", async () =
 });
 
 Deno.test("createServiceHandler - should create new service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -113,7 +113,7 @@ Deno.test("createServiceHandler - should create new service", async () => {
 });
 
 Deno.test("createServiceHandler - should require name and code", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -139,7 +139,7 @@ Deno.test("createServiceHandler - should require name and code", async () => {
 });
 
 Deno.test("updateServiceHandler - should update existing service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -181,7 +181,7 @@ Deno.test("updateServiceHandler - should update existing service", async () => {
 });
 
 Deno.test("deleteServiceHandler - should delete existing service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -214,7 +214,7 @@ Deno.test("deleteServiceHandler - should delete existing service", async () => {
 });
 
 Deno.test("getAllConfigHandler - should return all configuration", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -231,7 +231,7 @@ Deno.test("getAllConfigHandler - should return all configuration", async () => {
 });
 
 Deno.test("getConfigHandler - should return specific config value", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -247,7 +247,7 @@ Deno.test("getConfigHandler - should return specific config value", async () => 
 });
 
 Deno.test("getConfigHandler - should return 404 for nonexistent config key", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -261,7 +261,7 @@ Deno.test("getConfigHandler - should return 404 for nonexistent config key", asy
 });
 
 Deno.test("updateConfigHandler - should update config value", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 
@@ -284,7 +284,7 @@ Deno.test("updateConfigHandler - should update config value", async () => {
 });
 
 Deno.test("updateConfigHandler - should require value", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
 

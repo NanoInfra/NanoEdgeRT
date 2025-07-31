@@ -11,6 +11,9 @@
     "@hono/node-server/serve-static": "https://esm.sh/@hono/node-server/serve-static?deps=hono@4.8.9",
     "kysely": "npm:kysely@^0.28.3"
   },
+  "unstable": [
+    "worker-options"
+  ],
   "tasks": {
     "start": "deno run --allow-all --unstable-worker-options src/nanoedge.ts",
     "test": "deno test --allow-all --unstable-worker-options tests/",

@@ -7,8 +7,7 @@ import {
   ServiceManagerState,
   startService,
 } from "./service-manager.ts";
-import { jwtCheck } from "./api.admin.ts";
-import { Context } from "hono";
+import { verifyJWT } from "./api.admin.ts";
 
 // Service-specific documentation routes
 export function setupDocsRoutes(
@@ -40,7 +39,7 @@ export function setupDocsRoutes(
       }
 
       // Add server information if not present
-      const config = await loadConfig(context.dbContext);
+      const config = await loadConfig(context.dbContext.dbInstance);
       if (!schema.servers) {
         schema.servers = [
           {
@@ -72,7 +71,18 @@ export function setupApiRoutes(
     const handleService = async (service: ServiceInstance) => {
       // JWT authentication check
       if (service.config.jwt_check) {
-        jwtCheck(c, async (c: Context) => (await forwardToService(service, c.req.raw)));
+        try {
+          const _payload = await verifyJWT(
+            c.req.header("Authorization")?.replace("Bearer ", "") || "",
+          );
+          if (_payload) {
+            return await forwardToService(service, c.req.raw);
+          } else {
+            return c.json({ error: "Unauthorized" }, 401);
+          }
+        } catch (_error) {
+          return c.json({ error: "Unauthorized " + _error }, 401);
+        }
       }
 
       if (service.status === "running") {

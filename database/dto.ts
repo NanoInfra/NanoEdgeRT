@@ -34,19 +34,16 @@ export interface DatabaseContext {
 export async function createDatabaseContext(
   dbInstance: Kysely<Database>,
 ): Promise<DatabaseContext> {
+  const config = await loadConfig(dbInstance);
   return {
     dbInstance,
-    config: await loadConfig({ dbInstance, config: null }),
+    config,
   };
 }
 
-export async function loadConfig(context: DatabaseContext): Promise<Config> {
-  if (context.config) {
-    return context.config;
-  }
-
+export async function loadConfig(dbInstance: Kysely<Database>): Promise<Config> {
   // Load configuration from database
-  const configRows = await context.dbInstance
+  const configRows = await dbInstance
     .selectFrom("config")
     .selectAll()
     .execute();
@@ -54,7 +51,7 @@ export async function loadConfig(context: DatabaseContext): Promise<Config> {
   const configMap = new Map(configRows.map((row) => [row.key, row.value]));
 
   // Load services from database
-  const serviceRows = await context.dbInstance
+  const serviceRows = await dbInstance
     .selectFrom("services")
     .selectAll()
     .where("enabled", "=", true)
@@ -77,7 +74,6 @@ export async function loadConfig(context: DatabaseContext): Promise<Config> {
     services,
   };
 
-  context.config = config;
   return config;
 }
 
@@ -135,13 +131,10 @@ export async function createService(
   return service; // Return the created service
 }
 
-export async function updateService(context: DatabaseContext, name: string, updates: {
-  code?: string;
-  enabled?: boolean;
-  jwt_check?: boolean;
-  permissions?: ServicePermissions;
-  schema?: string;
-}): Promise<void> {
+export async function updateService(
+  context: DatabaseContext,
+  updates: ServiceConfig,
+): Promise<ServiceConfig> {
   const updateData: Partial<{
     code: string;
     enabled: boolean;
@@ -167,8 +160,7 @@ export async function updateService(context: DatabaseContext, name: string, upda
     .where("name", "=", name)
     .execute();
 
-  // Invalidate cache
-  context.config = null;
+  return updates;
 }
 
 export async function deleteService(context: DatabaseContext, name: string): Promise<void> {

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import openapi from "../../src/openapi.ts";
 

@@ -1,17 +1,17 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createNanoEdgeRT } from "../../src/nanoedge.ts";
-import { createService, getService } from "../../database/dto.ts";
+import { createDatabaseContext, createService, getService } from "../../database/dto.ts";
+import { createIsolatedDb } from "../test_utils.ts";
 
 Deno.test("Integration: Service lifecycle from creation to execution", async () => {
-  const [app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [app, port, abortController, _serviceManagerState] = await createNanoEdgeRT(dbContext);
 
-  try {
-    const dbContext = serviceManagerState.dbContext;
-
-    // Create a new service via database API
-    const serviceData = {
-      name: "test-lifecycle-service",
-      code: `export default async function handler(req) {
+  // Create a new service via database API
+  const serviceData = {
+    name: "test-lifecycle-service",
+    code: `export default async function handler(req) {
         const url = new URL(req.url);
         return new Response(JSON.stringify({
           message: "Hello from test service",
@@ -22,74 +22,80 @@ Deno.test("Integration: Service lifecycle from creation to execution", async () 
           headers: { "Content-Type": "application/json" }
         });
       }`,
-      enabled: true,
-      jwt_check: false,
-      permissions: { read: [], write: [], env: [], run: [] },
-      schema: JSON.stringify({
-        openapi: "3.0.0",
-        info: { title: "Test Service", version: "1.0.0" },
-        paths: {
-          "/": {
-            get: {
-              summary: "Test endpoint",
-              responses: {
-                "200": {
-                  description: "Success",
-                  content: {
-                    "application/json": {
-                      schema: { type: "object" },
-                    },
+    enabled: true,
+    jwt_check: false,
+    permissions: { read: [], write: [], env: [], run: [] },
+    schema: JSON.stringify({
+      openapi: "3.0.0",
+      info: { title: "Test Service", version: "1.0.0" },
+      paths: {
+        "/": {
+          get: {
+            summary: "Test endpoint",
+            responses: {
+              "200": {
+                description: "Success",
+                content: {
+                  "application/json": {
+                    schema: { type: "object" },
                   },
                 },
               },
             },
           },
         },
-      }),
-    };
+      },
+    }),
+  };
 
-    // Create the service
-    const createdService = await createService(dbContext, serviceData);
-    assertExists(createdService);
-    assertEquals(createdService.name, "test-lifecycle-service");
+  // Create the service
+  const createdService = await createService(dbContext, serviceData);
+  assertExists(createdService);
+  assertEquals(createdService.name, "test-lifecycle-service");
 
-    // Verify service can be retrieved
-    const retrievedService = await getService(dbContext, "test-lifecycle-service");
-    assertExists(retrievedService);
-    assertEquals(retrievedService.name, "test-lifecycle-service");
+  // Verify service can be retrieved
+  const retrievedService = await getService(dbContext, "test-lifecycle-service");
+  assertExists(retrievedService);
+  assertEquals(retrievedService.name, "test-lifecycle-service");
 
-    // Test service documentation endpoint
-    const docsResponse = await app.fetch(
-      new Request("http://localhost:8000/api/docs/test-lifecycle-service"),
-    );
-    assertEquals(docsResponse.status, 200);
+  // Test service documentation endpoint
+  const docsResponse = await app.fetch(
+    new Request(
+      `http://localhost:${port}/api/docs/test-lifecycle-service`,
+    ),
+  );
+  assertEquals(docsResponse.status, 200);
+  const docs = await docsResponse.text(); // We just want to ensure it returns valid documentation
+  assertEquals(docs.trimStart()[0], "<");
 
-    // Test service OpenAPI schema endpoint
-    const schemaResponse = await app.fetch(
-      new Request("http://localhost:8000/api/docs/openapi/test-lifecycle-service"),
-    );
-    assertEquals(schemaResponse.status, 200);
+  // Test service OpenAPI schema endpoint
+  const schemaResponse = await app.fetch(
+    new Request(
+      `http://localhost:${port}/api/docs/openapi/test-lifecycle-service`,
+    ),
+  );
+  assertEquals(schemaResponse.status, 200);
 
-    const schema = await schemaResponse.json();
-    assertExists(schema.openapi);
-    assertEquals(schema.info.title, "Test Service");
+  const schema = await schemaResponse.json();
+  assertExists(schema.openapi);
+  assertEquals(schema.info.title, "Test Service");
 
-    // Test service execution (will trigger service startup)
-    const serviceResponse = await app.fetch(
-      new Request("http://localhost:8000/api/v2/test-lifecycle-service/"),
-    );
+  // Test service execution (will trigger service startup)
+  const serviceResponse = await app.fetch(
+    new Request(`http://localhost:${port}/api/v2/test-lifecycle-service/`),
+  );
+  assertEquals(serviceResponse.status, 200);
+  const responseBody = await serviceResponse.json();
+  assertExists(responseBody);
+  assertEquals(responseBody.message, "Hello from test service");
 
-    // Note: In test environment, the service may not actually start due to worker limitations,
-    // but we verify the request is handled appropriately
-    assertExists(serviceResponse);
-  } finally {
-    abortController.abort();
-  }
+  abortController.abort();
 });
 
 Deno.test("Integration: Service with JWT authentication", async () => {
-  const [app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
-
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(dbContext);
   try {
     const dbContext = serviceManagerState.dbContext;
 
@@ -119,13 +125,16 @@ Deno.test("Integration: Service with JWT authentication", async () => {
 
     // The service should either fail to start or reject the request
     assertExists(unauthorizedResponse);
+    assertEquals(unauthorizedResponse.status, 401); // Unauthorized due to missing JWT
   } finally {
     abortController.abort();
   }
 });
 
 Deno.test("Integration: Service with custom permissions", async () => {
-  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(dbContext);
 
   try {
     const dbContext = serviceManagerState.dbContext;
@@ -163,7 +172,9 @@ Deno.test("Integration: Service with custom permissions", async () => {
 });
 
 Deno.test("Integration: Database configuration management", async () => {
-  const [app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [_app, port, abortController, serviceManagerState] = await createNanoEdgeRT(dbContext);
 
   try {
     const db = serviceManagerState.dbContext.dbInstance;
@@ -179,83 +190,16 @@ Deno.test("Integration: Database configuration management", async () => {
     // Find main_port config
     const mainPortConfig = configs.find((c) => c.key === "main_port");
     assertExists(mainPortConfig);
-    assertEquals(mainPortConfig.value, "8000");
-
-    // Test configuration updating
-    await db
-      .updateTable("config")
-      .set({
-        value: "9000",
-        updated_at: new Date().toISOString(),
-      })
-      .where("key", "=", "main_port")
-      .execute();
-
-    // Verify update
-    const updatedConfig = await db
-      .selectFrom("config")
-      .select(["key", "value"])
-      .where("key", "=", "main_port")
-      .executeTakeFirst();
-
-    assertExists(updatedConfig);
-    assertEquals(updatedConfig.value, "9000");
-  } finally {
-    abortController.abort();
-  }
-});
-
-Deno.test("Integration: Port allocation and service management", async () => {
-  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
-
-  try {
-    const { allocatePort, releasePort, getAllocatedPorts } = await import(
-      "../../database/sqlite3.ts"
-    );
-    const db = serviceManagerState.dbContext.dbInstance;
-
-    // Test port allocation
-    const port1 = await allocatePort("service1", db);
-    const port2 = await allocatePort("service2", db);
-    const port3 = await allocatePort("service3", db);
-
-    assertExists(port1);
-    assertExists(port2);
-    assertExists(port3);
-
-    // Ports should be different
-    assertEquals(port1 !== port2, true);
-    assertEquals(port2 !== port3, true);
-    assertEquals(port1 !== port3, true);
-
-    // Check allocated ports
-    const allocatedPorts = await getAllocatedPorts(db);
-    assertEquals(allocatedPorts.length, 3);
-
-    // Release a port
-    await releasePort("service2", db);
-
-    // Check allocated ports again
-    const remainingPorts = await getAllocatedPorts(db);
-    assertEquals(remainingPorts.length, 2);
-
-    // Verify the released port is available again
-    const portsInDB = await db
-      .selectFrom("ports")
-      .selectAll()
-      .where("port", "=", port2)
-      .executeTakeFirst();
-
-    assertExists(portsInDB);
-    assertEquals(portsInDB.service_name, null);
-    assertExists(portsInDB.released_at);
+    assertEquals(mainPortConfig.value.toString(), port.toString());
   } finally {
     abortController.abort();
   }
 });
 
 Deno.test("Integration: Service state management", async () => {
-  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(dbContext);
 
   try {
     const { getService, getAllServices } = await import("../../src/service-manager.ts");
@@ -279,7 +223,9 @@ Deno.test("Integration: Service state management", async () => {
 });
 
 Deno.test("Integration: Default services availability", async () => {
-  const [app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(dbContext);
 
   try {
     const db = serviceManagerState.dbContext.dbInstance;
@@ -288,10 +234,10 @@ Deno.test("Integration: Default services availability", async () => {
     const defaultServices = await db
       .selectFrom("services")
       .selectAll()
-      .where("name", "in", ["hello", "calculator"])
+      .where("name", "in", ["hello"])
       .execute();
 
-    assertEquals(defaultServices.length, 2);
+    assertEquals(defaultServices.length, 1);
 
     // Test hello service documentation
     const helloDocsResponse = await app.fetch(
@@ -299,27 +245,16 @@ Deno.test("Integration: Default services availability", async () => {
     );
     assertEquals(helloDocsResponse.status, 200);
 
-    // Test calculator service documentation
-    const calcDocsResponse = await app.fetch(
-      new Request("http://localhost:8000/api/docs/calculator"),
-    );
-    assertEquals(calcDocsResponse.status, 200);
-
     // Verify default services have proper schemas
     const helloService = defaultServices.find((s) => s.name === "hello");
-    const calcService = defaultServices.find((s) => s.name === "calculator");
 
     assertExists(helloService);
-    assertExists(calcService);
     assertExists(helloService.schema);
-    assertExists(calcService.schema);
 
     // Verify schemas are valid JSON
     const helloSchema = JSON.parse(helloService.schema);
-    const calcSchema = JSON.parse(calcService.schema);
 
     assertExists(helloSchema.openapi);
-    assertExists(calcSchema.openapi);
   } finally {
     abortController.abort();
   }

@@ -982,11 +982,11 @@ export default {
   "components": {
     "securitySchemes": {
       "jwtAuth": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "Authorization",
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
         "description":
-          "JWT token for admin authentication. Include the JWT token directly in the Authorization header.",
+          "JWT Bearer token authentication. Include the token in the Authorization header as 'Bearer <token>'.",
       },
     },
     "schemas": {

@@ -11,19 +11,7 @@ import {
   getServicePort,
   releasePort,
 } from "../../database/sqlite3.ts";
-
-let port = 9000; // Base port for tests
-async function createIsolatedDb() {
-  const db = await createOrLoadDatabase(":memory:", {
-    available_port_start: port + 1,
-    available_port_end: port + 20,
-    main_port: port,
-    jwt_secret: Deno.env.get("JWT_SECRET") || "default-secret-change-me",
-  });
-
-  port += 20; // Increment base port for next test
-  return db;
-}
+import { createIsolatedDb } from "../test_utils.ts";
 
 Deno.test("createOrLoadDatabase - should create in-memory database", async () => {
   const db = await createIsolatedDb();

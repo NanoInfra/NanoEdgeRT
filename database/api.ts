@@ -21,7 +21,7 @@ declare module "hono" {
 export function databaseMiddleware(dbContext: DatabaseContext) {
   return async (c: Context, next: Next) => {
     c.set("dbContext", dbContext);
-    await next();
+    return await next();
   };
 }
 
@@ -103,19 +103,6 @@ async function createServiceHandler(c: Context): Promise<Response> {
       }
     }
 
-    // Validate JavaScript code (basic syntax check)
-    try {
-      new Function(code);
-    } catch (error) {
-      return c.json(
-        {
-          error: "Invalid JavaScript code",
-          details: error instanceof Error ? error.message : String(error),
-        },
-        400,
-      );
-    }
-
     await createService(dbContext, {
       name,
       code,
@@ -160,22 +147,8 @@ async function updateServiceHandler(c: Context): Promise<Response> {
       }
     }
 
-    // Validate JavaScript code if provided
-    if (code) {
-      try {
-        new Function(code);
-      } catch (error) {
-        return c.json(
-          {
-            error: "Invalid JavaScript code",
-            details: error instanceof Error ? error.message : String(error),
-          },
-          400,
-        );
-      }
-    }
-
-    await updateService(dbContext, serviceName, {
+    await updateService(dbContext, {
+      name: serviceName,
       code,
       enabled,
       jwt_check,
@@ -183,7 +156,7 @@ async function updateServiceHandler(c: Context): Promise<Response> {
       schema,
     });
 
-    return c.json({ message: "Service updated successfully" });
+    return c.json({ message: "Service updated successfully", ...body });
   } catch (error) {
     console.error("Update service error:", error);
     return c.json(

@@ -181,7 +181,7 @@ Deno.test("Integration: Database operations through API", async () => {
       .selectAll()
       .execute();
 
-    assertEquals(services.length >= 2, true); // Should have hello and calculator
+    assertEquals(services.length >= 1, true); // Should have hello
 
     // Test that configuration is loaded
     const config = await serviceManagerState.dbContext.config;
@@ -207,7 +207,7 @@ Deno.test("Integration: Service manager state management", async () => {
       .where("enabled", "=", true)
       .execute();
 
-    assertEquals(dbServices.length >= 2, true);
+    assertEquals(dbServices.length >= 1, true);
   } finally {
     abortController.abort();
   }

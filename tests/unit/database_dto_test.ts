@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import {
   createDatabaseContext,
@@ -9,10 +10,10 @@ import {
   updateConfig,
   updateService,
 } from "../../database/dto.ts";
-import { createOrLoadDatabase } from "../../database/sqlite3.ts";
+import { createIsolatedDb } from "../test_utils.ts";
 
 Deno.test("createDatabaseContext - should create valid context", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   assertExists(context);
@@ -22,10 +23,10 @@ Deno.test("createDatabaseContext - should create valid context", async () => {
 });
 
 Deno.test("loadConfig - should load default configuration", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
-  const config = await loadConfig(context);
+  const config = await loadConfig(context.dbInstance);
 
   assertExists(config);
   assertExists(config.available_port_start);
@@ -41,17 +42,17 @@ Deno.test("loadConfig - should load default configuration", async () => {
 });
 
 Deno.test("loadConfig - should return cached config on subsequent calls", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
-  const config1 = await loadConfig(context);
-  const config2 = await loadConfig(context);
+  const config1 = await loadConfig(context.dbInstance);
+  const config2 = await loadConfig(context.dbInstance);
 
   assertEquals(config1, config2);
 });
 
 Deno.test("updateConfig - should update configuration values", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   const testKey = `test_key_${Date.now()}_${Math.random()}`;
@@ -70,7 +71,7 @@ Deno.test("updateConfig - should update configuration values", async () => {
 });
 
 Deno.test("updateConfig - should handle upsert operations", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   const testKey = `test_upsert_key_${Date.now()}_${Math.random()}`;
@@ -93,7 +94,7 @@ Deno.test("updateConfig - should handle upsert operations", async () => {
 });
 
 Deno.test("createService - should create new service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   const serviceData = {
@@ -117,7 +118,7 @@ Deno.test("createService - should create new service", async () => {
 });
 
 Deno.test("getService - should retrieve service by name", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   // Create a service first
@@ -140,7 +141,7 @@ Deno.test("getService - should retrieve service by name", async () => {
 });
 
 Deno.test("getService - should return null for nonexistent service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   const service = await getService(context, "nonexistent");
@@ -148,7 +149,7 @@ Deno.test("getService - should return null for nonexistent service", async () =>
 });
 
 Deno.test("getAllServices - should retrieve all services", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   // Create multiple services
@@ -186,7 +187,7 @@ Deno.test("getAllServices - should retrieve all services", async () => {
 });
 
 Deno.test("updateService - should update existing service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   // Create a service first
@@ -202,6 +203,7 @@ Deno.test("updateService - should update existing service", async () => {
 
   // Update the service
   const updateData = {
+    name: "test-service",
     code: "updated code",
     enabled: false,
     jwt_check: true,
@@ -209,7 +211,7 @@ Deno.test("updateService - should update existing service", async () => {
     schema: JSON.stringify({ openapi: "3.0.0", info: { title: "Updated", version: "2.0.0" } }),
   };
 
-  const updatedService = await updateService(context, "test-service", updateData);
+  const updatedService = await updateService(context, updateData);
 
   assertExists(updatedService);
   assertEquals((updatedService as any).name, "test-service");
@@ -220,7 +222,7 @@ Deno.test("updateService - should update existing service", async () => {
 });
 
 Deno.test("deleteService - should remove service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   // Create a service first
@@ -247,7 +249,7 @@ Deno.test("deleteService - should remove service", async () => {
 });
 
 Deno.test("createService - should handle duplicate names", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   const serviceData = {
@@ -272,7 +274,7 @@ Deno.test("createService - should handle duplicate names", async () => {
 });
 
 Deno.test("loadConfig - should include enabled services only", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const context = await createDatabaseContext(db);
 
   // Create enabled and disabled services
@@ -293,8 +295,7 @@ Deno.test("loadConfig - should include enabled services only", async () => {
   });
 
   // Clear cached config to force reload
-  context.config = null;
-  const config = await loadConfig(context);
+  const config = await loadConfig(context.dbInstance);
 
   const enabledServiceNames = config.services.map((s) => s.name);
   assertEquals(enabledServiceNames.includes("enabled-service"), true);

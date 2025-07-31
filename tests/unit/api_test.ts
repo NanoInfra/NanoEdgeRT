@@ -1,11 +1,11 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { setupApiRoutes, setupDocsRoutes } from "../../src/api.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
-import { createOrLoadDatabase } from "../../database/sqlite3.ts";
 import { createServiceManagerState } from "../../src/service-manager.ts";
+import { createIsolatedDb } from "../test_utils.ts";
 
 Deno.test("setupDocsRoutes - should create docs router", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -14,7 +14,7 @@ Deno.test("setupDocsRoutes - should create docs router", async () => {
 });
 
 Deno.test("setupDocsRoutes - should handle service documentation request", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -52,7 +52,7 @@ Deno.test("setupDocsRoutes - should handle service documentation request", async
 });
 
 Deno.test("setupDocsRoutes - should handle OpenAPI schema request", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -94,7 +94,7 @@ Deno.test("setupDocsRoutes - should handle OpenAPI schema request", async () => 
 });
 
 Deno.test("setupDocsRoutes - should handle missing service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -112,7 +112,7 @@ Deno.test("setupDocsRoutes - should handle missing service", async () => {
 });
 
 Deno.test("setupDocsRoutes - should handle invalid schema", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -145,7 +145,7 @@ Deno.test("setupDocsRoutes - should handle invalid schema", async () => {
 });
 
 Deno.test("setupApiRoutes - should create service router", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -154,7 +154,7 @@ Deno.test("setupApiRoutes - should create service router", async () => {
 });
 
 Deno.test("setupApiRoutes - should handle nonexistent service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -172,7 +172,7 @@ Deno.test("setupApiRoutes - should handle nonexistent service", async () => {
 });
 
 Deno.test("setupApiRoutes - should handle service startup", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
   const serviceManagerState = createServiceManagerState(dbContext);
 
@@ -198,37 +198,8 @@ Deno.test("setupApiRoutes - should handle service startup", async () => {
     new Request("http://localhost/test-service/"),
   );
 
-  // Since this is unit test and we can't easily test the full service lifecycle,
-  // we just verify the route handling
-  assertExists(response);
-});
-
-Deno.test("setupApiRoutes - should handle running service", async () => {
-  const db = await createOrLoadDatabase(":memory:");
-  const dbContext = await createDatabaseContext(db);
-  const serviceManagerState = createServiceManagerState(dbContext);
-
-  // Mock a running service
-  const mockService = {
-    config: {
-      name: "test-service",
-      jwt_check: false,
-      enabled: true,
-      permissions: { read: [], write: [], env: [], run: [] },
-      code: "export default async function handler(req) { return new Response('ok'); }",
-    },
-    port: 8001,
-    status: "running" as const,
-  };
-
-  serviceManagerState.services.set("test-service", mockService);
-
-  const serviceRouter = setupApiRoutes(serviceManagerState);
-
-  const response = await serviceRouter.fetch(
-    new Request("http://localhost/test-service/"),
-  );
-
-  // Should attempt to forward to service, which will fail in test but that's expected
-  assertExists(response);
+  const res = await response.json();
+  assertEquals(response.status, 200);
+  assertExists(res);
+  assertEquals(res.message, "hello");
 });

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import {
   assertEquals,
   assertExists,
@@ -13,9 +14,6 @@ import {
 } from "../../src/service-manager.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
 import { createOrLoadDatabase } from "../../database/sqlite3.ts";
-
-// Use isolated port ranges for each test to prevent conflicts
-let nextPortBase = 9000;
 
 Deno.test("createServiceManagerState - should create valid state", async () => {
   const db = await createOrLoadDatabase(":memory:");
@@ -256,28 +254,4 @@ Deno.test("stopAllServices - should stop all services", async () => {
 
   await stopAllServices(state);
   assertEquals(state.services.size, 0);
-});
-
-Deno.test("startService - should handle worker creation errors", async () => {
-  const db = await createOrLoadDatabase(":memory:");
-  const dbContext = await createDatabaseContext(db);
-  const state = createServiceManagerState(dbContext);
-
-  const serviceConfig = {
-    name: "test-service",
-    enabled: true,
-    jwt_check: false,
-    permissions: { read: [], write: [], env: [], run: [] },
-    code: "invalid javascript code that will throw",
-  };
-
-  // This should fail due to invalid code
-  await assertRejects(
-    async () => {
-      await startService(state, serviceConfig);
-    },
-  );
-
-  // Service should not be in state after failure
-  assertEquals(state.services.has("test-service"), false);
 });

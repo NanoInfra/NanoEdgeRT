@@ -1,11 +1,10 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { jwtCheck, setupAdminAPIRoutes } from "../../src/api.admin.ts";
+import { createJWT, jwtCheck, setupAdminAPIRoutes } from "../../src/api.admin.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
-import { createOrLoadDatabase } from "../../database/sqlite3.ts";
-import { createValidJWTToken } from "../test_utils.ts";
+import { createIsolatedDb } from "../test_utils.ts";
 
 Deno.test("setupAdminAPIRoutes - should create admin router with JWT middleware", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
 
   const adminRouter = setupAdminAPIRoutes(dbContext);
@@ -13,7 +12,7 @@ Deno.test("setupAdminAPIRoutes - should create admin router with JWT middleware"
 });
 
 Deno.test("setupAdminAPIRoutes - should require JWT authentication", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
 
   const adminRouter = setupAdminAPIRoutes(dbContext);
@@ -32,46 +31,37 @@ Deno.test("setupAdminAPIRoutes - should require JWT authentication", async () =>
 });
 
 Deno.test("setupAdminAPIRoutes - should accept valid JWT token", async () => {
-  // Set environment variable for JWT secret
-  const originalSecret = Deno.env.get("ADMIN_JWT_SECRET");
-  Deno.env.set("ADMIN_JWT_SECRET", "test-secret");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
 
-  try {
-    const db = await createOrLoadDatabase(":memory:");
-    const dbContext = await createDatabaseContext(db);
+  const adminRouter = setupAdminAPIRoutes(dbContext);
 
-    const adminRouter = setupAdminAPIRoutes(dbContext);
+  // Create a valid JWT token
+  const token = await createJWT({
+    sub: "user123",
+    role: "admin",
+    exp: Math.floor(Date.now() / 1000) + 60 * 5, // Token expires in 5 minutes
+  });
 
-    // Create a valid JWT token
-    const token = await createValidJWTToken();
+  // Test request with JWT token
+  const response = await adminRouter.fetch(
+    new Request("http://localhost/services", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    }),
+  );
 
-    // Test request with JWT token
-    const response = await adminRouter.fetch(
-      new Request("http://localhost/services", {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      }),
-    );
-
-    // Note: This might still fail due to JWT validation complexity,
-    // but we're testing the router setup and middleware application
-    assertExists(response);
-    // Consume response body to prevent leaks
-    await response.text();
-  } finally {
-    // Restore original environment
-    if (originalSecret) {
-      Deno.env.set("ADMIN_JWT_SECRET", originalSecret);
-    } else {
-      Deno.env.delete("ADMIN_JWT_SECRET");
-    }
-  }
+  // Note: This might still fail due to JWT validation complexity,
+  // but we're testing the router setup and middleware application
+  assertExists(response);
+  // Consume response body to prevent leaks
+  await response.text();
 });
 
 Deno.test("setupAdminAPIRoutes - should delegate to database API routes", async () => {
-  const db = await createOrLoadDatabase(":memory:");
+  const db = await createIsolatedDb();
   const dbContext = await createDatabaseContext(db);
 
   // Create a test service to verify API functionality
@@ -97,30 +87,20 @@ Deno.test("setupAdminAPIRoutes - should delegate to database API routes", async 
 
 Deno.test("setupAdminAPIRoutes - should use default JWT secret when env not set", async () => {
   // Temporarily remove JWT secret env var
-  const originalSecret = Deno.env.get("ADMIN_JWT_SECRET");
-  Deno.env.delete("ADMIN_JWT_SECRET");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
 
-  try {
-    const db = await createOrLoadDatabase(":memory:");
-    const dbContext = await createDatabaseContext(db);
+  const adminRouter = setupAdminAPIRoutes(dbContext);
 
-    const adminRouter = setupAdminAPIRoutes(dbContext);
+  // Should use default secret "admin"
+  assertExists(adminRouter);
 
-    // Should use default secret "admin"
-    assertExists(adminRouter);
+  // Test that unauthorized request is rejected
+  const response = await adminRouter.fetch(
+    new Request("http://localhost/services"),
+  );
 
-    // Test that unauthorized request is rejected
-    const response = await adminRouter.fetch(
-      new Request("http://localhost/services"),
-    );
-
-    assertEquals(response.status, 401);
-  } finally {
-    // Restore original environment
-    if (originalSecret) {
-      Deno.env.set("ADMIN_JWT_SECRET", originalSecret);
-    }
-  }
+  assertEquals(response.status, 401);
 });
 
 Deno.test("jwtCheck - middleware function should exist", () => {

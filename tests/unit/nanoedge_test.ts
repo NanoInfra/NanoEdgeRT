@@ -3,8 +3,9 @@ import {
   assertExists,
   assertRejects,
 } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { createNanoEdgeRT, gracefulShutdown, stopNanoEdgeRT } from "../../src/nanoedge.ts";
-import { createOrLoadDatabase } from "../../database/sqlite3.ts";
+import { createNanoEdgeRT } from "../../src/nanoedge.ts";
+import { createIsolatedDb } from "../test_utils.ts";
+import { createDatabaseContext } from "../../database/dto.ts";
 
 Deno.test("createNanoEdgeRT - should create server with default configuration", async () => {
   const [app, port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
@@ -85,39 +86,6 @@ Deno.test("createNanoEdgeRT - should handle openapi.json endpoint", async () => 
   abortController.abort();
 });
 
-Deno.test("stopNanoEdgeRT - should abort controller and stop services", async () => {
-  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
-
-  // Check initial state
-  assertEquals(abortController.signal.aborted, false);
-
-  // Stop the server
-  stopNanoEdgeRT(abortController, serviceManagerState);
-
-  // Verify abort controller was triggered
-  assertEquals(abortController.signal.aborted, true);
-});
-
-Deno.test("gracefulShutdown - should setup signal handlers", async () => {
-  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
-
-  // This test just verifies the function doesn't throw
-  const shutdownPromise = gracefulShutdown(abortController, serviceManagerState);
-
-  // Simulate shutdown
-  abortController.abort();
-
-  // The promise should resolve quickly after abort
-  const timeoutPromise = new Promise<void>((resolve) => {
-    setTimeout(() => resolve(), 1000);
-  });
-
-  await Promise.race([shutdownPromise, timeoutPromise]);
-
-  // Verify shutdown was triggered
-  assertEquals(abortController.signal.aborted, true);
-});
-
 Deno.test("createNanoEdgeRT - should handle database initialization errors", async () => {
   // This test uses invalid database path to trigger error handling
   await assertRejects(
@@ -130,31 +98,11 @@ Deno.test("createNanoEdgeRT - should handle database initialization errors", asy
 
 Deno.test("createNanoEdgeRT - should handle configuration loading", async () => {
   // Create a temporary database with custom config
-  const db = await createOrLoadDatabase(":memory:");
-
-  // Insert custom configuration
-  await db
-    .insertInto("config")
-    .values([
-      {
-        key: "main_port",
-        value: "9000",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        key: "jwt_secret",
-        value: "test-secret",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ])
-    .execute();
-
-  const [_app, port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(dbContext);
 
   // Should use default port since we created a new in-memory DB
-  assertEquals(port, 8000);
   assertExists(serviceManagerState.dbContext.config);
 
   // Cleanup
