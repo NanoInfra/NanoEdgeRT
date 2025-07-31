@@ -12,17 +12,20 @@
 ## ✨ Key Features
 
 ### 🔗 Versioned API Architecture
+
 - **Service API**: `/api/v2/{serviceName}/*` - Public service endpoints
 - **Admin API**: `/admin-api/v2/*` - JWT-protected administrative operations
 - **Documentation API**: `/api/docs/{serviceName}` - Service-specific documentation
 
 ### 🛡️ Enterprise Security
+
 - **JWT Authentication** - Industry-standard token-based authentication
 - **Admin Protection** - All administrative operations require valid JWT tokens
 - **Service-Level Security** - Optional JWT authentication per service
 - **Database Isolation** - Secure SQLite-based service management
 
 ### ⚡ Performance & Scalability
+
 - **Sub-millisecond** response times
 - **5,000+ operations/sec** throughput
 - **Isolated Workers** - Each service runs in its own Deno Worker
@@ -30,6 +33,7 @@
 - **Hot Reload** - Instant service updates in development
 
 ### 🎨 Developer Experience
+
 - **Interactive API Documentation** - Swagger UI with live testing
 - **Type-Safe Development** - Full TypeScript support
 - **Comprehensive Testing** - 50+ tests covering all scenarios
@@ -92,7 +96,7 @@ graph TB
    ```bash
    deno task start
    ```
-   
+
    The server will automatically:
    - Initialize SQLite database
    - Create default services (hello, calculator)
@@ -102,7 +106,7 @@ graph TB
    ```bash
    # Check system health
    curl http://localhost:8000/health
-   
+
    # Test default service
    curl "http://localhost:8000/api/v2/hello?name=World"
    ```
@@ -115,20 +119,20 @@ graph TB
 
 ### 🌐 Public Endpoints
 
-| Endpoint | Method | Description | Example |
-|----------|--------|-------------|---------|
-| `/health` | GET | System health check | `curl http://localhost:8000/health` |
-| `/status` | GET | Detailed system status | `curl http://localhost:8000/status` |
-| `/docs` | GET | Interactive API documentation | Open in browser |
-| `/openapi.json` | GET | OpenAPI specification | `curl http://localhost:8000/openapi.json` |
+| Endpoint        | Method | Description                   | Example                                   |
+| --------------- | ------ | ----------------------------- | ----------------------------------------- |
+| `/health`       | GET    | System health check           | `curl http://localhost:8000/health`       |
+| `/status`       | GET    | Detailed system status        | `curl http://localhost:8000/status`       |
+| `/docs`         | GET    | Interactive API documentation | Open in browser                           |
+| `/openapi.json` | GET    | OpenAPI specification         | `curl http://localhost:8000/openapi.json` |
 
 ### 🔗 Service API (v2)
 
-| Endpoint | Methods | Description | Example |
-|----------|---------|-------------|---------|
-| `/api/v2/{serviceName}/*` | GET, POST, PUT, DELETE | Forward requests to service | `curl http://localhost:8000/api/v2/hello` |
-| `/api/docs/{serviceName}` | GET | Service documentation | `curl http://localhost:8000/api/docs/hello` |
-| `/api/docs/openapi/{serviceName}` | GET | Service OpenAPI schema | `curl http://localhost:8000/api/docs/openapi/hello` |
+| Endpoint                          | Methods                | Description                 | Example                                             |
+| --------------------------------- | ---------------------- | --------------------------- | --------------------------------------------------- |
+| `/api/v2/{serviceName}/*`         | GET, POST, PUT, DELETE | Forward requests to service | `curl http://localhost:8000/api/v2/hello`           |
+| `/api/docs/{serviceName}`         | GET                    | Service documentation       | `curl http://localhost:8000/api/docs/hello`         |
+| `/api/docs/openapi/{serviceName}` | GET                    | Service OpenAPI schema      | `curl http://localhost:8000/api/docs/openapi/hello` |
 
 ### 🛡️ Admin API (v2) - JWT Required
 
@@ -141,21 +145,21 @@ export JWT_TOKEN="your-admin-jwt-token"
 
 #### Service Management
 
-| Endpoint | Method | Description | Example |
-|----------|--------|-------------|---------|
-| `/admin-api/v2/services` | GET | List all services | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services` |
-| `/admin-api/v2/services` | POST | Create new service | See [Service Creation](#-service-creation) |
-| `/admin-api/v2/services/{name}` | GET | Get specific service | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/hello` |
-| `/admin-api/v2/services/{name}` | PUT | Update service | See [Service Updates](#-service-updates) |
-| `/admin-api/v2/services/{name}` | DELETE | Delete service | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/my-service` |
+| Endpoint                        | Method | Description          | Example                                                                                                       |
+| ------------------------------- | ------ | -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/admin-api/v2/services`        | GET    | List all services    | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services`                      |
+| `/admin-api/v2/services`        | POST   | Create new service   | See [Service Creation](#-service-creation)                                                                    |
+| `/admin-api/v2/services/{name}` | GET    | Get specific service | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/hello`                |
+| `/admin-api/v2/services/{name}` | PUT    | Update service       | See [Service Updates](#-service-updates)                                                                      |
+| `/admin-api/v2/services/{name}` | DELETE | Delete service       | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/my-service` |
 
 #### Configuration Management
 
-| Endpoint | Method | Description | Example |
-|----------|--------|-------------|---------|
-| `/admin-api/v2/config` | GET | Get all configuration | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/config` |
-| `/admin-api/v2/config/{key}` | GET | Get config value | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/config/main_port` |
-| `/admin-api/v2/config/{key}` | PUT | Update config value | See [Configuration](#-configuration) |
+| Endpoint                     | Method | Description           | Example                                                                                          |
+| ---------------------------- | ------ | --------------------- | ------------------------------------------------------------------------------------------------ |
+| `/admin-api/v2/config`       | GET    | Get all configuration | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/config`           |
+| `/admin-api/v2/config/{key}` | GET    | Get config value      | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/config/main_port` |
+| `/admin-api/v2/config/{key}` | PUT    | Update config value   | See [Configuration](#-configuration)                                                             |
 
 ## 🔧 Service Management
 
@@ -221,17 +225,17 @@ curl -H "Authorization: Bearer $JWT_TOKEN" \
 
 ```typescript
 interface ServiceConfig {
-  name: string;                    // Unique service name
-  code: string;                    // JavaScript/TypeScript code
-  enabled: boolean;                // Whether service is active
-  jwt_check: boolean;              // Require JWT for access
+  name: string; // Unique service name
+  code: string; // JavaScript/TypeScript code
+  enabled: boolean; // Whether service is active
+  jwt_check: boolean; // Require JWT for access
   permissions: {
-    read: string[];                // File read permissions
-    write: string[];               // File write permissions
-    env: string[];                 // Environment variables
-    run: string[];                 // Executable permissions
+    read: string[]; // File read permissions
+    write: string[]; // File write permissions
+    env: string[]; // Environment variables
+    run: string[]; // Executable permissions
   };
-  schema?: string;                 // OpenAPI schema (JSON string)
+  schema?: string; // OpenAPI schema (JSON string)
 }
 ```
 
@@ -266,12 +270,12 @@ curl -X PUT \
 
 ### 📊 Configuration Keys
 
-| Key | Type | Description | Default |
-|-----|------|-------------|---------|
-| `main_port` | number | Main server port | 8000 |
-| `available_port_start` | number | Service port range start | 8001 |
-| `available_port_end` | number | Service port range end | 8999 |
-| `jwt_secret` | string | JWT signing secret | "default-secret-change-me" |
+| Key                    | Type   | Description              | Default                    |
+| ---------------------- | ------ | ------------------------ | -------------------------- |
+| `main_port`            | number | Main server port         | 8000                       |
+| `available_port_start` | number | Service port range start | 8001                       |
+| `available_port_end`   | number | Service port range end   | 8999                       |
+| `jwt_secret`           | string | JWT signing secret       | "default-secret-change-me" |
 
 ## 🔐 Authentication & Security
 
@@ -283,9 +287,9 @@ NanoEdgeRT v2 uses JWT tokens for admin API access and optional service protecti
 
 ```typescript
 interface JWTPayload {
-  sub: string;                     // Subject (user ID)
-  exp: number;                     // Expiration timestamp
-  [key: string]: any;              // Additional custom claims
+  sub: string; // Subject (user ID)
+  exp: number; // Expiration timestamp
+  [key: string]: any; // Additional custom claims
 }
 ```
 
@@ -319,42 +323,48 @@ Create services using this template:
 export default async function handler(req) {
   const url = new URL(req.url);
   const method = req.method;
-  
+
   // Handle different HTTP methods
   switch (method) {
-    case 'GET':
+    case "GET":
       return handleGet(url);
-    case 'POST':
+    case "POST":
       return handlePost(req);
     default:
-      return new Response('Method not allowed', { status: 405 });
+      return new Response("Method not allowed", { status: 405 });
   }
 }
 
 async function handleGet(url) {
-  const name = url.searchParams.get('name') || 'World';
-  
-  return new Response(JSON.stringify({
-    message: `Hello, ${name}!`,
-    timestamp: new Date().toISOString(),
-    path: url.pathname
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  const name = url.searchParams.get("name") || "World";
+
+  return new Response(
+    JSON.stringify({
+      message: `Hello, ${name}!`,
+      timestamp: new Date().toISOString(),
+      path: url.pathname,
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 }
 
 async function handlePost(req) {
   const body = await req.json();
-  
-  return new Response(JSON.stringify({
-    received: body,
-    processed: true,
-    timestamp: new Date().toISOString()
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+
+  return new Response(
+    JSON.stringify({
+      received: body,
+      processed: true,
+      timestamp: new Date().toISOString(),
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 }
 ```
 
@@ -540,50 +550,50 @@ class NanoEdgeRTClient {
     this.jwtToken = jwtToken;
   }
 
-  async callService(serviceName, path = '', options = {}) {
+  async callService(serviceName, path = "", options = {}) {
     const url = `${this.baseUrl}/api/v2/${serviceName}${path}`;
     return fetch(url, {
       ...options,
       headers: {
         ...options.headers,
-        ...(this.jwtToken ? { 'Authorization': `Bearer ${this.jwtToken}` } : {})
-      }
+        ...(this.jwtToken ? { "Authorization": `Bearer ${this.jwtToken}` } : {}),
+      },
     });
   }
 
   async createService(serviceConfig) {
     return fetch(`${this.baseUrl}/admin-api/v2/services`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.jwtToken}`
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${this.jwtToken}`,
       },
-      body: JSON.stringify(serviceConfig)
+      body: JSON.stringify(serviceConfig),
     });
   }
 
   async getServices() {
     const response = await fetch(`${this.baseUrl}/admin-api/v2/services`, {
-      headers: { 'Authorization': `Bearer ${this.jwtToken}` }
+      headers: { "Authorization": `Bearer ${this.jwtToken}` },
     });
     return response.json();
   }
 }
 
 // Usage
-const client = new NanoEdgeRTClient('http://localhost:8000', 'your-jwt-token');
+const client = new NanoEdgeRTClient("http://localhost:8000", "your-jwt-token");
 
 // Call a service
-const response = await client.callService('hello', '?name=Developer');
+const response = await client.callService("hello", "?name=Developer");
 const data = await response.json();
 
 // Create a new service
 await client.createService({
-  name: 'api-client-service',
+  name: "api-client-service",
   code: 'export default async function handler(req) { return new Response("Hello from API!"); }',
   enabled: true,
   jwt_check: false,
-  permissions: { read: [], write: [], env: [], run: [] }
+  permissions: { read: [], write: [], env: [], run: [] },
 });
 ```
 
@@ -664,13 +674,14 @@ NanoEdgeRT provides comprehensive error responses:
 
 ```typescript
 interface ErrorResponse {
-  error: string;           // Error message
-  message?: string;        // Detailed message
-  details?: string;        // Additional details
+  error: string; // Error message
+  message?: string; // Detailed message
+  details?: string; // Additional details
 }
 ```
 
 Common HTTP status codes:
+
 - `200` - Success
 - `201` - Created
 - `400` - Bad Request
