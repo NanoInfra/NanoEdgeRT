@@ -1,6 +1,6 @@
 {
   "name": "NanoEdgeRT",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A lightweight, high-performance edge function runtime built with Deno",
   "imports": {
     "hono": "https://esm.sh/hono@4.8.9",
@@ -9,7 +9,8 @@
     "hono/jwt": "https://esm.sh/hono@4.8.9/dist/middleware/jwt",
     "@hono/swagger-ui": "https://esm.sh/@hono/swagger-ui@0.5.2?deps=hono@4.8.9",
     "@hono/node-server/serve-static": "https://esm.sh/@hono/node-server/serve-static?deps=hono@4.8.9",
-    "kysely": "npm:kysely@^0.28.3"
+    "kysely": "npm:kysely@^0.28.3",
+    "jszip": "https://esm.sh/jszip@^3.10.1"
   },
   "unstable": [
     "worker-options"
@@ -37,5 +38,8 @@
     "semiColons": true,
     "singleQuote": false,
     "proseWrap": "preserve"
+  },
+  "exports": {
+    "./mod.ts": "./src/nanoedge.ts"
   }
 }

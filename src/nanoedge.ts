@@ -62,7 +62,7 @@ export async function createNanoEdgeRT(
 
 export async function startNanoEdgeRT(
   db: string | DatabaseContext = ":memory:",
-): Promise<void> {
+): Promise<AbortController> {
   console.log("🚀 Starting NanoEdgeRT...");
 
   // Start main server
@@ -81,18 +81,10 @@ export async function startNanoEdgeRT(
     console.log("✅ NanoEdgeRT stopped");
   });
 
-  globalThis.addEventListener("beforeunload", () => {
-    console.log("🛑 Graceful shutdown initiated...");
-    stopNanoEdgeRT(ac);
-  });
-
-  globalThis.addEventListener("SIGINT", () => {
-    console.log("🛑 SIGINT received, initiating graceful shutdown...");
-    stopNanoEdgeRT(ac);
-  });
-
   console.log(`✅ NanoEdgeRT server running on port ${port}`);
   console.log("📚 API documentation available at /docs");
+
+  return ac;
 }
 
 function stopNanoEdgeRT(ac: AbortController): void {
@@ -100,13 +92,23 @@ function stopNanoEdgeRT(ac: AbortController): void {
   ac.abort();
 }
 
-export async function server(dbPath?: string | DatabaseContext): Promise<void> {
-  await startNanoEdgeRT(dbPath);
-  console.log("NanoEdgeRT server is running. Press Ctrl+C to stop.");
-  Deno.exit(0);
-}
-
 if (import.meta.main) {
   const dbPath = Deno.args[0] || ":memory:";
-  await server(dbPath);
+
+  Deno.addSignalListener("SIGINT", () => {
+    console.log("\n🛑 SIGINT received, initiating graceful shutdown...");
+    stopNanoEdgeRT(ac);
+  });
+
+  // if is not windows
+  if (Deno.build.os !== "windows") {
+    Deno.addSignalListener("SIGTERM", () => {
+      console.log("\n🛑 SIGTERM received, initiating graceful shutdown...");
+      stopNanoEdgeRT(ac);
+    });
+  }
+
+  const ac = await startNanoEdgeRT(dbPath);
+  console.log("NanoEdgeRT server is running. Press Ctrl+C to stop.");
+  await new Promise((resolve) => ac.signal.addEventListener("abort", resolve));
 }

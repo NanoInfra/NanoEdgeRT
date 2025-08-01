@@ -3,6 +3,7 @@ import { createNanoEdgeRT } from "../../src/nanoedge.ts";
 import { createIsolatedDb } from "../test_utils.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
 import { createJWT } from "../../src/api.admin.ts";
+import JSZip from "jszip";
 
 Deno.test("Integration: Admin API authentication flow", async () => {
   const [app, _port, abortController, _serviceManagerState] = await createNanoEdgeRT(":memory:");
@@ -274,6 +275,146 @@ Deno.test("Integration: Admin API middleware chain", async () => {
     // Should have CORS headers even for admin endpoints
     assertExists(corsResponse.headers.get("access-control-allow-origin"));
   } finally {
+    abortController.abort();
+  }
+});
+
+Deno.test("Integration: Frontend hosting API", async () => {
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [app, port, abortController, _serviceManagerState] = await createNanoEdgeRT(dbContext);
+
+  try {
+    // Create a mock token
+    const _mockToken = await createJWT({
+      sub: "admin",
+      role: "admin",
+      exp: Math.floor(Date.now() / 1000) + 60 * 5,
+    });
+
+    // Create mock files for testing
+    const serverCode = `
+export default async function handler(req) {
+  const url = new URL(req.url);
+  let filePath = globalThis.staticDir;
+  if (url.pathname === "/" || url.pathname === "") {
+    filePath += 'index.html';
+  } else {
+    filePath += url.pathname;
+  }
+  const filePathURL = new URL(filePath, import.meta.url);
+  try {
+    const file = await Deno.readFile(filePathURL);
+    let contentType = "text/html";
+    if (url.pathname.endsWith(".css")) {
+    contentType = "text/css";
+    }
+    return new Response(file, {
+    headers: { 'Content-Type': contentType }
+    });
+  } catch {
+    console.error("File not found:", filePathURL);
+    return new Response('Not Found', { status: 404 });
+  }
+}
+`;
+
+    // Create a simple ZIP file containing an index.html
+    const indexHtml = "<html><body><h1>Hello Frontend!</h1></body></html>";
+
+    // Create a real ZIP file using JSZip
+    const zip = new JSZip();
+    zip.file("index.html", indexHtml);
+    zip.file("assets/style.css", "body { font-family: Arial; }");
+
+    // Generate the ZIP file as a Uint8Array
+    const zipBuffer = await zip.generateAsync({ type: "uint8array" });
+
+    const serverFile = new File([serverCode], "server.js", { type: "application/javascript" });
+    const staticFile = new File([zipBuffer], "static.zip", { type: "application/zip" });
+
+    const formData = new FormData();
+    formData.append("server", serverFile);
+    formData.append("static", staticFile);
+    formData.append("serviceName", "my-frontend");
+
+    // Test with valid authentication - should work
+    const authResponse = await app.fetch(
+      new Request("http://localhost:8000/admin-api/v2/host-frontend", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${_mockToken}`,
+        },
+        body: formData,
+      }),
+    );
+
+    // Should successfully create the frontend service
+    assertEquals(authResponse.status, 201);
+
+    const responseJson = await authResponse.json();
+    assertEquals(responseJson.serviceName, "my-frontend");
+    assertExists(responseJson.message);
+
+    // Verify the service was created in the database
+    const createdService = await db
+      .selectFrom("services")
+      .selectAll()
+      .where("name", "=", "my-frontend")
+      .executeTakeFirst();
+
+    assertExists(createdService);
+    assertEquals(createdService.name, "my-frontend");
+    assertEquals(Boolean(createdService.enabled), true);
+    assertEquals(Boolean(createdService.jwt_check), false);
+    assertExists(createdService.code); // Test that static directory was created and files extracted
+
+    // fetch the service created here
+    // Test that the service is actually running and serving files
+    const serviceResponse = await app.fetch(
+      new Request(`http://localhost:${port}/api/v2/my-frontend/index.html`),
+    );
+    assertEquals(serviceResponse.status, 200);
+
+    const serviceContent = await serviceResponse.text();
+    console.log("Service Content:", serviceContent);
+    assertEquals(serviceContent, indexHtml);
+
+    // Test CSS file serving
+    const cssResponse = await app.fetch(
+      new Request(`http://localhost:${port}/api/v2/my-frontend/assets/style.css`),
+    );
+    assertEquals(cssResponse.status, 200);
+
+    const cssResponseContent = await cssResponse.text();
+    console.log("CSS Content:", cssResponseContent);
+    assertEquals(cssResponse.headers.get("Content-Type"), "text/css");
+    assertEquals(cssResponseContent, "body { font-family: Arial; }");
+
+    try {
+      const indexExists = await Deno.stat("./static/my-frontend/index.html");
+      assertExists(indexExists);
+
+      const cssExists = await Deno.stat("./static/my-frontend/assets/style.css");
+      assertExists(cssExists);
+
+      // Read and verify file contents
+      const indexContent = await Deno.readTextFile("./static/my-frontend/index.html");
+      assertEquals(indexContent, indexHtml);
+
+      const cssContent = await Deno.readTextFile("./static/my-frontend/assets/style.css");
+      assertEquals(cssContent, "body { font-family: Arial; }");
+    } catch (error) {
+      throw error;
+    }
+  } finally {
+    // Clean up on test failure
+    try {
+      // await Deno.remove("./static", { recursive: true });
+    } catch {
+      // Ignore cleanup errors
+      console.warn("Failed to clean up static directory");
+    }
     abortController.abort();
   }
 });

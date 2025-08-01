@@ -20,7 +20,7 @@ Deno.test("openapi - should have valid info section", () => {
   assertExists(openapi.info.license);
 
   assertEquals(openapi.info.title, "NanoEdgeRT API");
-  assertEquals(openapi.info.version, "2.0.0");
+  assertEquals(openapi.info.version, "2.1.0");
   assertEquals(openapi.info.license.name, "MIT");
 });
 

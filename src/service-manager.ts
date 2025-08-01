@@ -76,9 +76,10 @@ export async function startService(
     }
 
     const serviceCode = serviceConfig.code;
-
+    const staticDir = new URL(`../static/${serviceConfig.name}/`, import.meta.url);
     // Create worker adapter code that safely executes the database-stored code
     const workerAdapterCode = `
+globalThis.staticDir = "${staticDir.toString()}";
 // User service code (from database)
 ${serviceCode}
 
@@ -102,22 +103,22 @@ if (typeof __handler !== 'function') {
 const __handler_rewriter = async (req) => {
   const url = new URL(req.url);
   const pathSegments = url.pathname.split("/").filter(s => s);
-  
-  // Remove service name from path
-  if (pathSegments[0] === "${serviceConfig.name}") {
-    pathSegments.shift();
+
+  // Remove 'api', 'v2', and service name from path
+  if (pathSegments[0] === "api" && pathSegments[1] === "v2" && pathSegments[2] === "${serviceConfig.name}") {
+  pathSegments.splice(0, 3);
   }
-  
+
   const newPath = "/" + pathSegments.join("/");
   const rewrittenUrl = "http://${serviceConfig.name}" + newPath + url.search;
-  
+
   const newReq = new Request(rewrittenUrl, {
-    method: req.method,
-    headers: req.headers,
-    body: req.body,
-    credentials: req.credentials,
+  method: req.method,
+  headers: req.headers,
+  body: req.body,
+  credentials: req.credentials,
   });
-  
+
   return await __handler(newReq);
 };
 
@@ -126,39 +127,37 @@ const ____AC = new AbortController();
 // Handle server startup
 (async () => {
   try {
-    console.log("Starting service ${serviceConfig.name} on port ${port}");
-    
-    await Deno.serve({
-      port: ${port},
-      signal: ____AC.signal,
-    }, async (req) => {
-      try {
-        return await __handler_rewriter(req);
-      } catch (error) {
-        console.error("Request error:", error);
-        return new Response(
-          JSON.stringify({ error: error.message || String(error) }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
-    }).finished;
+  await Deno.serve({
+    port: ${port},
+    signal: ____AC.signal,
+  }, async (req) => {
+    try {
+    return await __handler_rewriter(req);
+    } catch (error) {
+    console.error("Request error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message || String(error) }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+    }
+  }).finished;
   } catch (error) {
-    self.postMessage({
-      type: "startup_error",
-      error: error.message || String(error),
-    });
+  self.postMessage({
+    type: "startup_error",
+    error: error.message || String(error),
+  });
   }
 })();
 
 self.onmessage = async (event) => {
   if (event.data === "stop") {
-    console.log("Stopping ${serviceConfig.name}");
-    ____AC.abort();
-    self.close();
-    return;
+  console.log("Stopping ${serviceConfig.name}");
+  ____AC.abort();
+  self.close();
+  return;
   }
 };
-`;
+  `;
 
     // Create worker with appropriate permissions
     const worker = new Worker(
@@ -168,7 +167,7 @@ self.onmessage = async (event) => {
         deno: {
           permissions: {
             net: true,
-            read: serviceConfig.permissions?.read || [],
+            read: serviceConfig.permissions?.read.map((urlString) => new URL(urlString)) || [],
             write: serviceConfig.permissions?.write || [],
             env: serviceConfig.permissions?.env || [],
             run: serviceConfig.permissions?.run || [],
@@ -229,5 +228,5 @@ export async function stopAllServices(
   for (const serviceName of state.services.keys()) {
     await stopService(state, serviceName);
   }
-  console.log("All services stopped");
+  console.log("✅ All services stopped");
 }
