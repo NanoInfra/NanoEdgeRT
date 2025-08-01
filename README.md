@@ -1,4 +1,4 @@
-# 🚀 NanoEdgeRT v2.0
+# 🚀 NanoEdgeRT v2.1
 
 [![CI](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml/badge.svg)](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml)
 [![Deno](https://img.shields.io/badge/Deno-000000?style=for-the-badge&logo=deno&logoColor=white)](https://deno.land/)
@@ -7,7 +7,7 @@
 
 **Next-Generation Edge Function Runtime** - A lightweight, high-performance platform built with Deno and SQLite for deploying and managing serverless functions at the edge with enterprise-grade security and developer experience.
 
-> 🏆 **Enterprise Ready**: Sub-millisecond response times, 5,000+ ops/sec throughput, JWT authentication, versioned APIs, and auto-generated documentation!
+> 🏆 **Enterprise Ready**: Sub-millisecond response times, 5,000+ ops/sec throughput, JWT authentication, versioned APIs, frontend hosting, and auto-generated documentation!
 
 ## ✨ Key Features
 
@@ -36,8 +36,16 @@
 
 - **Interactive API Documentation** - Swagger UI with live testing
 - **Type-Safe Development** - Full TypeScript support
-- **Comprehensive Testing** - 50+ tests covering all scenarios
+- **Comprehensive Testing** - 110+ tests covering all scenarios
 - **Database-Driven Configuration** - No config files needed
+- **Frontend Hosting** - Deploy static websites with custom server logic
+
+### 🌐 Frontend Hosting
+
+- **Full-Stack Deployment** - Upload JavaScript server + static assets ZIP
+- **Automatic File Extraction** - ZIP files automatically extracted to static directories
+- **Custom Server Logic** - JavaScript server files handle dynamic routing
+- **Static Asset Serving** - Optimized static file serving with proper MIME types
 
 ## 🏗️ Architecture Overview
 
@@ -54,6 +62,7 @@ graph TB
     PublicRouter --> Health["/health"]
     PublicRouter --> Status["/status"]
     PublicRouter --> Docs["/docs"]
+    PublicRouter --> Static["/static"]
     
     AdminRouter --> AdminAPI["/admin-api/v2/*"]
     ServiceRouter --> ServiceAPI["/api/v2/*"]
@@ -145,13 +154,14 @@ export JWT_TOKEN="your-admin-jwt-token"
 
 #### Service Management
 
-| Endpoint                        | Method | Description          | Example                                                                                                       |
-| ------------------------------- | ------ | -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `/admin-api/v2/services`        | GET    | List all services    | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services`                      |
-| `/admin-api/v2/services`        | POST   | Create new service   | See [Service Creation](#-service-creation)                                                                    |
-| `/admin-api/v2/services/{name}` | GET    | Get specific service | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/hello`                |
-| `/admin-api/v2/services/{name}` | PUT    | Update service       | See [Service Updates](#-service-updates)                                                                      |
-| `/admin-api/v2/services/{name}` | DELETE | Delete service       | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/my-service` |
+| Endpoint                        | Method | Description                 | Example                                                                                                       |
+| ------------------------------- | ------ | --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/admin-api/v2/services`        | GET    | List all services           | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services`                      |
+| `/admin-api/v2/services`        | POST   | Create new service          | See [Service Creation](#-service-creation)                                                                    |
+| `/admin-api/v2/services/{name}` | GET    | Get specific service        | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/hello`                |
+| `/admin-api/v2/services/{name}` | PUT    | Update service              | See [Service Updates](#-service-updates)                                                                      |
+| `/admin-api/v2/services/{name}` | DELETE | Delete service              | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/my-service` |
+| `/admin-api/v2/host-frontend`   | POST   | Deploy frontend application | See [Frontend Hosting](#-frontend-hosting-deployment)                                                         |
 
 #### Configuration Management
 
@@ -276,6 +286,122 @@ curl -X PUT \
 | `available_port_start` | number | Service port range start | 8001                       |
 | `available_port_end`   | number | Service port range end   | 8999                       |
 | `jwt_secret`           | string | JWT signing secret       | "default-secret-change-me" |
+
+## 🌐 Frontend Hosting Deployment
+
+### 🚀 Deploy Frontend Applications
+
+NanoEdgeRT v2.1 introduces powerful frontend hosting capabilities, allowing you to deploy full-stack applications with custom server logic and static assets.
+
+#### How It Works
+
+1. **Upload Server JS File** - JavaScript file that handles dynamic routing and server logic
+2. **Upload Static Assets ZIP** - ZIP file containing your frontend assets (HTML, CSS, JS, images, etc.)
+3. **Automatic Extraction** - Static files are automatically extracted to `./static/{serviceName}/`
+4. **Service Creation** - A new service is created with read permissions to the static directory
+
+#### Example Deployment
+
+```bash
+# Create a simple server.js file
+cat > server.js << 'EOF'
+export default async function handler(req) {
+  const url = new URL(req.url);
+  const staticDir = './static/my-app';
+  
+  let filePath = staticDir;
+  if (url.pathname === "/" || url.pathname === "") {
+    filePath += '/index.html';
+  } else {
+    filePath += url.pathname;
+  }
+  
+  try {
+    const file = await Deno.readFile(filePath);
+    let contentType = "text/html";
+    
+    if (url.pathname.endsWith(".css")) {
+      contentType = "text/css";
+    } else if (url.pathname.endsWith(".js")) {
+      contentType = "application/javascript";
+    } else if (url.pathname.endsWith(".png")) {
+      contentType = "image/png";
+    }
+    
+    return new Response(file, {
+      headers: { 'Content-Type': contentType }
+    });
+  } catch {
+    return new Response('Not Found', { status: 404 });
+  }
+}
+EOF
+
+# Create a simple frontend and zip it
+mkdir -p frontend/css frontend/js
+cat > frontend/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My App</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <h1>Welcome to My App!</h1>
+    <script src="/js/app.js"></script>
+</body>
+</html>
+EOF
+
+cat > frontend/css/style.css << 'EOF'
+body { font-family: Arial, sans-serif; margin: 40px; }
+h1 { color: #333; }
+EOF
+
+cat > frontend/js/app.js << 'EOF'
+console.log('App loaded!');
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM ready!');
+});
+EOF
+
+# Create ZIP file
+cd frontend && zip -r ../static.zip . && cd ..
+
+# Deploy the frontend
+curl -X POST \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -F "server=@server.js" \
+  -F "static=@static.zip" \
+  -F "serviceName=my-app" \
+  http://localhost:8000/admin-api/v2/host-frontend
+
+# Your app is now available at:
+# http://localhost:8000/api/v2/my-app/
+```
+
+#### Response Format
+
+```json
+{
+  "message": "Frontend hosted successfully",
+  "serviceName": "my-app",
+  "staticPath": "./static/my-app"
+}
+```
+
+#### Requirements
+
+- **Server File**: Must be a `.js` file with a default export function
+- **Static File**: Must be a `.zip` file containing your frontend assets
+- **Service Name**: Must be unique and alphanumeric (hyphens allowed)
+
+#### Use Cases
+
+- **Single Page Applications (SPAs)** - React, Vue, Angular apps with custom routing
+- **Static Websites** - Documentation sites, portfolios, landing pages
+- **Progressive Web Apps (PWAs)** - Apps with offline capabilities
+- **Hybrid Applications** - Mix of static content and dynamic server logic
 
 ## 🔐 Authentication & Security
 

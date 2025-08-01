@@ -4,7 +4,7 @@ export default {
     "title": "NanoEdgeRT API",
     "description":
       "NanoEdgeRT is a dynamic service management platform that allows you to create, manage, and run JavaScript-based microservices with JWT authentication, OpenAPI documentation, and real-time service orchestration.",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "contact": {
       "name": "NanoEdgeRT",
       "url": "https://github.com/LemonHX/NanoEdgeRT",
@@ -947,6 +947,106 @@ export default {
           },
           "400": {
             "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/admin-api/v2/host-frontend": {
+      "post": {
+        "summary": "Host frontend application",
+        "description":
+          "Upload and deploy a frontend application with a server JavaScript file and static assets ZIP file",
+        "operationId": "hostFrontend",
+        "tags": ["Admin - Frontend Hosting"],
+        "security": [
+          {
+            "jwtAuth": [],
+          },
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "server": {
+                    "type": "string",
+                    "format": "binary",
+                    "description":
+                      "JavaScript server file (.js) that will handle requests for the frontend",
+                  },
+                  "static": {
+                    "type": "string",
+                    "format": "binary",
+                    "description":
+                      "ZIP file containing static assets that will be extracted to ./static/{serviceName}",
+                  },
+                  "serviceName": {
+                    "type": "string",
+                    "description": "Name of the service/frontend application",
+                    "example": "my-frontend-app",
+                  },
+                },
+                "required": ["server", "static", "serviceName"],
+              },
+            },
+          },
+        },
+        "responses": {
+          "201": {
+            "description": "Frontend hosted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Frontend hosted successfully",
+                    },
+                    "serviceName": {
+                      "type": "string",
+                      "example": "my-frontend-app",
+                    },
+                    "staticPath": {
+                      "type": "string",
+                      "example": "./static/my-frontend-app",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            "description": "Bad request - missing required fields or invalid file types",
             "content": {
               "application/json": {
                 "schema": {

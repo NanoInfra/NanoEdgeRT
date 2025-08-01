@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-08-01
+
+### 🎨 Frontend Hosting Feature
+
+### Added
+
+- 🌐 **Frontend Hosting API** - New `/admin-api/v2/host-frontend` endpoint for deploying frontend applications
+  - Support for multipart form uploads with server JavaScript file and static assets ZIP
+  - Automatic extraction of static files to `./static/{serviceName}` directory
+  - Service creation with appropriate file system permissions for static file serving
+  - JSZip integration for handling ZIP file extraction
+- 🔧 **Enhanced Service Management** - Services can now be created with read permissions to static directories
+- 📚 **Updated OpenAPI Documentation** - Added comprehensive documentation for the frontend hosting endpoint
+  - Multipart form data schema definitions
+  - File upload parameter specifications
+  - Response schemas with success and error cases
+
+### Technical Details
+
+- Added `jszip` dependency for ZIP file handling
+- Enhanced admin API with file upload capabilities
+- Automatic directory creation for static file hosting
+- Comprehensive error handling for invalid file types and missing parameters
+
 ## [2.0.0] - 2025-08-01
 
 ### 🚀 Major Architecture Overhaul
