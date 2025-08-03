@@ -1,5 +1,5 @@
-import { DatabaseContext, ServiceConfig } from "../database/dto.ts";
-import { allocatePort, getServicePort, releasePort } from "../database/sqlite3.ts";
+import { DatabaseContext, ServiceConfig } from "../../database/dto.ts";
+import { allocatePort, getServicePort, releasePort } from "../../database/sqlite3.ts";
 
 export interface ServiceInstance {
   config: ServiceConfig;
@@ -76,26 +76,15 @@ export async function startService(
     }
 
     const serviceCode = serviceConfig.code;
-    const staticDir = new URL(`../static/${serviceConfig.name}/`, import.meta.url);
-    // Create worker adapter code that safely executes the database-stored code
-    const workerAdapterCode = `
+    const staticDir = new URL(`../../static/${serviceConfig.name}/`, import.meta.url);
+    const handlerCode = `
 globalThis.staticDir = "${staticDir.toString()}";
-// User service code (from database)
+
 ${serviceCode}
-
-let __handler;
-
-// Try to find the handler function from the executed code
-if (typeof defaultExport !== 'undefined') {
-  __handler = defaultExport;
-} else if (typeof handler !== 'undefined') {
-  __handler = handler;
-} else if (typeof main !== 'undefined') {
-  __handler = main;
-} else {
-  throw new Error('No handler function found. Please export a function named "handler", "main", or use "defaultExport".');
-}
-
+`;
+    const handlerURI = "data:application/javascript," + encodeURIComponent(handlerCode);
+    const workerAdapterCode = `
+const __handler = (await import(\`${handlerURI}\`)).default;
 if (typeof __handler !== 'function') {
   throw new Error('Handler must be a function');
 }

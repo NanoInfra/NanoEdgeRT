@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2025-08-03
+
+### 🚀 Function Management System
+
+### Added
+
+- 🎯 **Function Management API** - Complete CRUD operations for serverless functions
+  - `POST /admin-api/v2/functions` - Create new functions with code and permissions
+  - `GET /admin-api/v2/functions` - List all functions
+  - `GET /admin-api/v2/functions/{name}` - Get specific function details
+  - `PUT /admin-api/v2/functions/{name}` - Update existing functions
+  - `DELETE /admin-api/v2/functions/{name}` - Delete functions
+- 🔄 **Function Execution Engine** - Execute functions in isolated Deno workers
+  - `POST /functions/v2/{name}` - Execute functions with parameters
+  - Support for both streaming (generators) and non-streaming responses
+  - Proper error handling and timeout management
+  - Configurable execution timeout via database config
+- 💾 **Database Schema Enhancement** - New functions table with comprehensive metadata
+  - Function code storage in database
+  - Permissions management (read, write, env, run)
+  - Enable/disable function toggle
+  - Creation and update timestamps
+- 🛡️ **Security & Isolation** - Functions run in sandboxed Deno workers
+  - Granular permission control per function
+  - Isolated execution environment
+  - Resource cleanup and timeout protection
+- 📊 **Streaming Support** - Generator functions for real-time data streaming
+  - Server-sent events (SSE) for streaming responses
+  - Progress tracking for long-running operations
+  - Proper stream lifecycle management
+
+### Enhanced
+
+- 🔧 **Database Configuration** - Added `function_execution_timeout` setting
+- 📚 **OpenAPI Documentation** - Complete API documentation for function management
+- 🧪 **Test Coverage** - Comprehensive unit and integration tests for function system
+
 ## [2.1.0] - 2025-08-01
 
 ### 🎨 Frontend Hosting Feature

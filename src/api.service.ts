@@ -6,7 +6,7 @@ import {
   ServiceInstance,
   ServiceManagerState,
   startService,
-} from "./service-manager.ts";
+} from "./managers/service-manager.ts";
 import { verifyJWT } from "./api.admin.ts";
 
 // Service-specific documentation routes

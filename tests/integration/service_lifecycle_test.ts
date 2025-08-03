@@ -202,7 +202,7 @@ Deno.test("Integration: Service state management", async () => {
   const [_app, _port, abortController, serviceManagerState] = await createNanoEdgeRT(dbContext);
 
   try {
-    const { getService, getAllServices } = await import("../../src/service-manager.ts");
+    const { getService, getAllServices } = await import("../../src/managers/service-manager.ts");
 
     // Initially no services should be running
     assertEquals(serviceManagerState.services.size, 0);

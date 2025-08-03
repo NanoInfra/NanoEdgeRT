@@ -1078,6 +1078,453 @@ export default {
         },
       },
     },
+    "/admin-api/v2/functions": {
+      "get": {
+        "summary": "Get all functions",
+        "description": "Retrieve a list of all functions",
+        "operationId": "getAllFunctions",
+        "tags": ["Admin - Functions"],
+        "security": [
+          {
+            "jwtAuth": [],
+          },
+        ],
+        "responses": {
+          "200": {
+            "description": "List of functions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "functions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Function",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+      "post": {
+        "summary": "Create a new function",
+        "description": "Create a new function with the provided configuration",
+        "operationId": "createFunction",
+        "tags": ["Admin - Functions"],
+        "security": [
+          {
+            "jwtAuth": [],
+          },
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunctionInput",
+              },
+            },
+          },
+        },
+        "responses": {
+          "201": {
+            "description": "Function created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                    "name": {
+                      "type": "string",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/admin-api/v2/functions/{name}": {
+      "get": {
+        "summary": "Get function by name",
+        "description": "Retrieve a specific function by name",
+        "operationId": "getFunction",
+        "tags": ["Admin - Functions"],
+        "security": [
+          {
+            "jwtAuth": [],
+          },
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
+            "description": "Function name",
+          },
+        ],
+        "responses": {
+          "200": {
+            "description": "Function details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Function",
+                },
+              },
+            },
+          },
+          "404": {
+            "description": "Function not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+      "put": {
+        "summary": "Update function",
+        "description": "Update an existing function",
+        "operationId": "updateFunction",
+        "tags": ["Admin - Functions"],
+        "security": [
+          {
+            "jwtAuth": [],
+          },
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
+            "description": "Function name",
+          },
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunctionUpdateInput",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "description": "Function updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "404": {
+            "description": "Function not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+      "delete": {
+        "summary": "Delete function",
+        "description": "Delete an existing function",
+        "operationId": "deleteFunction",
+        "tags": ["Admin - Functions"],
+        "security": [
+          {
+            "jwtAuth": [],
+          },
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
+            "description": "Function name",
+          },
+        ],
+        "responses": {
+          "200": {
+            "description": "Function deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "404": {
+            "description": "Function not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/functions/v2/{name}": {
+      "post": {
+        "summary": "Execute function",
+        "description":
+          "Execute a function with the provided input data. Supports both regular responses and streaming responses for generator functions.",
+        "operationId": "executeFunction",
+        "tags": ["Functions"],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
+            "description": "Function name to execute",
+          },
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Input data for the function execution",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "description": "Function executed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Function execution result",
+                },
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "Plain text response",
+                },
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "HTML response",
+                },
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-sent events stream for generator functions",
+                },
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "Binary response",
+                },
+              },
+            },
+          },
+          "403": {
+            "description": "Function is disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "404": {
+            "description": "Function not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+          "500": {
+            "description": "Function execution failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   "components": {
     "securitySchemes": {
@@ -1253,6 +1700,87 @@ export default {
           "schema": {
             "type": "string",
             "description": "OpenAPI schema JSON string",
+          },
+        },
+      },
+      "Function": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Function name",
+          },
+          "code": {
+            "type": "string",
+            "description": "JavaScript code for the function",
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the function is enabled",
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/ServicePermissions",
+          },
+          "description": {
+            "type": "string",
+            "description": "Function description",
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Function creation timestamp",
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Function last update timestamp",
+          },
+        },
+        "required": ["name", "code", "enabled", "permissions"],
+      },
+      "FunctionInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Function name",
+          },
+          "code": {
+            "type": "string",
+            "description": "JavaScript code for the function",
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the function is enabled",
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/ServicePermissions",
+          },
+          "description": {
+            "type": "string",
+            "description": "Function description",
+          },
+        },
+        "required": ["name", "code"],
+      },
+      "FunctionUpdateInput": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "JavaScript code for the function",
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the function is enabled",
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/ServicePermissions",
+          },
+          "description": {
+            "type": "string",
+            "description": "Function description",
           },
         },
       },

@@ -1,6 +1,7 @@
 import { Hono, MiddlewareHandler } from "hono";
 import { jwt, sign, verify } from "hono/jwt";
-import { setupAPIRoutes } from "../database/api.ts";
+import { setupAPIRoutes } from "../database/api.service.ts";
+import { setupFunctionAPIRoutes } from "../database/api.function.ts";
 import { createService, DatabaseContext } from "../database/dto.ts";
 import { Context } from "hono";
 import JSZip from "jszip";
@@ -144,6 +145,7 @@ export function setupAdminAPIRoutes(
   );
 
   setupAPIRoutes(app, dbContext);
+  setupFunctionAPIRoutes(app, dbContext);
 
   // Frontend hosting API
   app.post("/host-frontend", hostFrontendHandler);
