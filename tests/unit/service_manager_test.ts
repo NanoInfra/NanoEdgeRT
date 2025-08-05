@@ -11,7 +11,7 @@ import {
   startService,
   stopAllServices,
   stopService,
-} from "../../src/service-manager.ts";
+} from "../../src/managers/service-manager.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
 import { createOrLoadDatabase } from "../../database/sqlite3.ts";
 

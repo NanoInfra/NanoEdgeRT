@@ -1,4 +1,4 @@
-# 🚀 NanoEdgeRT v2.1
+# 🚀 NanoEdgeRT v2.5
 
 [![CI](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml/badge.svg)](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml)
 [![Deno](https://img.shields.io/badge/Deno-000000?style=for-the-badge&logo=deno&logoColor=white)](https://deno.land/)
@@ -7,13 +7,14 @@
 
 **Next-Generation Edge Function Runtime** - A lightweight, high-performance platform built with Deno and SQLite for deploying and managing serverless functions at the edge with enterprise-grade security and developer experience.
 
-> 🏆 **Enterprise Ready**: Sub-millisecond response times, 5,000+ ops/sec throughput, JWT authentication, versioned APIs, frontend hosting, and auto-generated documentation!
+> 🏆 **Enterprise Ready**: Sub-millisecond response times, 5,000+ ops/sec throughput, JWT authentication, versioned APIs, serverless functions, frontend hosting, and auto-generated documentation!
 
 ## ✨ Key Features
 
 ### 🔗 Versioned API Architecture
 
 - **Service API**: `/api/v2/{serviceName}/*` - Public service endpoints
+- **Function API**: `/functions/v2/{functionName}` - Serverless function execution
 - **Admin API**: `/admin-api/v2/*` - JWT-protected administrative operations
 - **Documentation API**: `/api/docs/{serviceName}` - Service-specific documentation
 
@@ -47,6 +48,15 @@
 - **Custom Server Logic** - JavaScript server files handle dynamic routing
 - **Static Asset Serving** - Optimized static file serving with proper MIME types
 
+### ⚡ Function Management
+
+- **Serverless Functions** - Deploy and execute JavaScript functions on-demand
+- **Generator Support** - Built-in support for streaming responses with generator functions
+- **Isolated Execution** - Functions run in secure Deno Workers with configurable permissions
+- **Database-Driven** - Functions stored and managed in SQLite database
+- **Real-time Streaming** - Support for both regular and streaming function responses
+- **Error Handling** - Comprehensive error handling and timeout protection
+
 ## 🏗️ Architecture Overview
 
 ```mermaid
@@ -55,6 +65,7 @@ graph TB
     Gateway --> Auth{JWT Auth Required?}
     Auth -->|Admin API| JWT[JWT Validation]
     Auth -->|Service API| ServiceRouter[Service Router]
+    Auth -->|Function API| FunctionRouter[Function Router]
     Auth -->|Public| PublicRouter[Public Routes]
     JWT -->|Valid| AdminRouter[Admin Router]
     JWT -->|Invalid| Error[401 Unauthorized]
@@ -65,19 +76,27 @@ graph TB
     PublicRouter --> Static["/static"]
     
     AdminRouter --> AdminAPI["/admin-api/v2/*"]
+    AdminRouter --> FunctionAdmin["/admin-api/v2/functions/*"]
     ServiceRouter --> ServiceAPI["/api/v2/*"]
     ServiceRouter --> ServiceDocs["/api/docs/*"]
+    FunctionRouter --> FunctionAPI["/functions/v2/*"]
     
     AdminAPI --> Database[(SQLite Database)]
     ServiceAPI --> ServiceManager[Service Manager]
+    FunctionAPI --> FunctionManager[Function Manager]
     ServiceDocs --> SwaggerUI[Swagger UI]
     
     ServiceManager --> Worker1[Service Worker :8001]
     ServiceManager --> Worker2[Service Worker :8002]
     ServiceManager --> WorkerN[Service Worker :800N]
     
+    FunctionManager --> FuncWorker1[Function Worker]
+    FunctionManager --> FuncWorker2[Function Worker]
+    FunctionManager --> FuncWorkerN[Function Worker]
+    
     subgraph "Database Layer"
         Database --> Services[Services Table]
+        Database --> Functions[Functions Table]
         Database --> Config[Config Table]
         Database --> Ports[Ports Table]
     end
@@ -85,6 +104,10 @@ graph TB
     Worker1 --> ServiceInstance1[hello service]
     Worker2 --> ServiceInstance2[calculator service]
     WorkerN --> ServiceInstanceN[custom services...]
+    
+    FuncWorker1 --> FunctionInstance1[serverless function]
+    FuncWorker2 --> FunctionInstance2[generator function]
+    FuncWorkerN --> FunctionInstanceN[custom functions...]
 ```
 
 ## 🚀 Quick Start
@@ -162,6 +185,17 @@ export JWT_TOKEN="your-admin-jwt-token"
 | `/admin-api/v2/services/{name}` | PUT    | Update service              | See [Service Updates](#-service-updates)                                                                      |
 | `/admin-api/v2/services/{name}` | DELETE | Delete service              | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/services/my-service` |
 | `/admin-api/v2/host-frontend`   | POST   | Deploy frontend application | See [Frontend Hosting](#-frontend-hosting-deployment)                                                         |
+
+#### Function Management
+
+| Endpoint                         | Method | Description           | Example                                                                                                                |
+| -------------------------------- | ------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `/admin-api/v2/functions`        | GET    | List all functions    | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/functions`                              |
+| `/admin-api/v2/functions`        | POST   | Create new function   | See [Function Creation](#-function-creation)                                                                           |
+| `/admin-api/v2/functions/{name}` | GET    | Get specific function | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/functions/my-function`                  |
+| `/admin-api/v2/functions/{name}` | PUT    | Update function       | See [Function Updates](#-function-updates)                                                                             |
+| `/admin-api/v2/functions/{name}` | DELETE | Delete function       | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/functions/my-function`        |
+| `/functions/v2/{name}`           | POST   | Execute function      | `curl -X POST -H "Content-Type: application/json" -d '{"key":"value"}' http://localhost:8000/functions/v2/my-function` |
 
 #### Configuration Management
 
@@ -287,11 +321,93 @@ curl -X PUT \
 | `available_port_end`   | number | Service port range end   | 8999                       |
 | `jwt_secret`           | string | JWT signing secret       | "default-secret-change-me" |
 
+## ⚡ Function Management
+
+### 🆕 Function Creation
+
+Create serverless functions that execute on-demand with configurable permissions and isolation.
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "hello-function",
+    "code": "export default function(input) { return { message: `Hello, ${input.name || \"World\"}!` }; }",
+    "enabled": true,
+    "permissions": {
+      "read": [],
+      "write": [],
+      "env": [],
+      "run": []
+    },
+    "description": "Simple greeting function"
+  }' \
+  http://localhost:8000/admin-api/v2/functions
+```
+
+### 🔄 Function Updates
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "export default function(input) { return { message: `Updated: Hello, ${input.name}!` }; }",
+    "enabled": true,
+    "description": "Updated greeting function"
+  }' \
+  http://localhost:8000/admin-api/v2/functions/hello-function
+```
+
+### 🚀 Function Execution
+
+Execute functions with JSON payload:
+
+```bash
+# Regular function execution
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Alice"}' \
+  http://localhost:8000/functions/v2/hello-function
+
+# Generator function with streaming response
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  http://localhost:8000/functions/v2/streaming-function
+```
+
+### 🎯 Generator Functions
+
+Functions can be generator functions for streaming responses:
+
+```javascript
+export default function* streamingFunction() {
+  yield "Starting process...";
+  yield "Processing data...";
+  yield "Almost done...";
+  return "Completed!";
+}
+```
+
+The response will be a Server-Sent Events stream:
+
+```
+data: "Starting process..."
+
+data: "Processing data..."
+
+data: "Almost done..."
+
+data: [DONE]"Completed!"
+```
+
 ## 🌐 Frontend Hosting Deployment
 
 ### 🚀 Deploy Frontend Applications
 
-NanoEdgeRT v2.1 introduces powerful frontend hosting capabilities, allowing you to deploy full-stack applications with custom server logic and static assets.
+NanoEdgeRT v2.5 introduces powerful frontend hosting capabilities, allowing you to deploy full-stack applications with custom server logic and static assets.
 
 #### How It Works
 

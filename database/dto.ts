@@ -18,12 +18,21 @@ export interface ServiceConfig {
   schema?: string;
 }
 
+export interface FunctionConfig {
+  name: string;
+  code: string;
+  enabled: boolean;
+  permissions: ServicePermissions;
+  description?: string;
+}
+
 export interface Config {
   available_port_start: number;
   available_port_end: number;
   services: ServiceConfig[];
   jwt_secret?: string;
   main_port?: number;
+  function_execution_timeout?: number; // Timeout in milliseconds for function execution
 }
 
 export interface DatabaseContext {
@@ -205,5 +214,104 @@ export async function getService(context: DatabaseContext, name: string): Promis
     enabled: Boolean(service.enabled),
     jwt_check: Boolean(service.jwt_check),
     permissions: JSON.parse(service.permissions) as ServicePermissions,
+  };
+}
+
+// Function management operations
+export async function createFunction(
+  context: DatabaseContext,
+  functionConfig: FunctionConfig,
+): Promise<FunctionConfig> {
+  const now = new Date().toISOString();
+
+  await context.dbInstance
+    .insertInto("functions")
+    .values({
+      name: functionConfig.name,
+      code: functionConfig.code,
+      enabled: functionConfig.enabled ?? true,
+      permissions: JSON.stringify(
+        functionConfig.permissions || {
+          read: [],
+          write: [],
+          env: [],
+          run: [],
+        },
+      ),
+      description: functionConfig.description || undefined,
+      created_at: now,
+      updated_at: now,
+    })
+    .execute();
+
+  return functionConfig;
+}
+
+export async function updateFunction(
+  context: DatabaseContext,
+  name: string,
+  updates: Partial<FunctionConfig>,
+): Promise<FunctionConfig> {
+  const updateData: Partial<{
+    code: string;
+    enabled: boolean;
+    permissions: string;
+    description: string;
+    updated_at: string;
+  }> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (updates.code !== undefined) updateData.code = updates.code;
+  if (updates.enabled !== undefined) updateData.enabled = updates.enabled;
+  if (updates.permissions !== undefined) {
+    updateData.permissions = JSON.stringify(updates.permissions);
+  }
+  if (updates.description !== undefined) updateData.description = updates.description;
+
+  await context.dbInstance
+    .updateTable("functions")
+    .set(updateData)
+    .where("name", "=", name)
+    .execute();
+
+  return { name, ...updates } as FunctionConfig;
+}
+
+export async function deleteFunction(context: DatabaseContext, name: string): Promise<void> {
+  await context.dbInstance
+    .deleteFrom("functions")
+    .where("name", "=", name)
+    .execute();
+}
+
+export async function getAllFunctions(context: DatabaseContext): Promise<FunctionConfig[]> {
+  const functions = await context.dbInstance
+    .selectFrom("functions")
+    .selectAll()
+    .execute();
+
+  return functions.map((func) => ({
+    ...func,
+    enabled: Boolean(func.enabled),
+    permissions: JSON.parse(func.permissions) as ServicePermissions,
+  }));
+}
+
+export async function getFunction(context: DatabaseContext, name: string): Promise<
+  FunctionConfig | null
+> {
+  const func = await context.dbInstance
+    .selectFrom("functions")
+    .selectAll()
+    .where("name", "=", name)
+    .executeTakeFirst();
+
+  if (!func) return null;
+
+  return {
+    ...func,
+    enabled: Boolean(func.enabled),
+    permissions: JSON.parse(func.permissions) as ServicePermissions,
   };
 }

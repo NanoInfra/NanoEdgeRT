@@ -30,10 +30,22 @@ export interface PortTable {
   released_at?: string;
 }
 
+export interface FunctionTable {
+  id?: number;
+  name: string;
+  code: string;
+  enabled: boolean;
+  permissions: string; // JSON string
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Database {
   services: ServiceTable;
   config: ConfigTable;
   ports: PortTable;
+  functions: FunctionTable;
 }
 
 // Function to create a database instance with custom path
@@ -89,6 +101,7 @@ export interface DbInitConfig {
   available_port_end?: number;
   main_port?: number;
   jwt_secret?: string;
+  function_execution_timeout?: number;
 }
 
 export const DEFAULT_DB_INIT_CONFIG: DbInitConfig = {
@@ -96,6 +109,7 @@ export const DEFAULT_DB_INIT_CONFIG: DbInitConfig = {
   available_port_end: 8999,
   main_port: 8000,
   jwt_secret: Deno.env.get("JWT_SECRET") || "default-secret-change-me",
+  function_execution_timeout: 30000, // 30 seconds default timeout
 };
 
 // Initialize database with tables
@@ -143,6 +157,24 @@ export async function initializeDatabase(
     .addColumn("service_name", "text") // null if available, service name if allocated
     .addColumn("allocated_at", "text")
     .addColumn("released_at", "text")
+    .execute();
+
+  // Create functions table
+  await dbInstance.schema
+    .createTable("functions")
+    .ifNotExists()
+    .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("name", "text", (col) => col.unique().notNull())
+    .addColumn("code", "text", (col) => col.notNull())
+    .addColumn("enabled", "boolean", (col) => col.notNull().defaultTo(true))
+    .addColumn(
+      "permissions",
+      "text",
+      (col) => col.notNull().defaultTo('{"read":[],"write":[],"env":[],"run":[]}'),
+    )
+    .addColumn("description", "text") // Nullable description
+    .addColumn("created_at", "text", (col) => col.notNull())
+    .addColumn("updated_at", "text", (col) => col.notNull())
     .execute();
 
   for (const [key, value] of Object.entries(config)) {

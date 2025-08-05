@@ -10,11 +10,13 @@ import {
   getAllServices,
   ServiceManagerState,
   stopAllServices,
-} from "./service-manager.ts";
-import { setupApiRoutes, setupDocsRoutes } from "./api.ts";
+} from "./managers/service-manager.ts";
+import { setupApiRoutes, setupDocsRoutes } from "./api.service.ts";
 import { setupAdminAPIRoutes } from "./api.admin.ts";
+import { setupJWTRoutes } from "./api.jwt.ts";
 import { Context } from "hono";
 import openapi from "./openapi.ts";
+import { setupFunctionAPIRoutes } from "./api.function.ts";
 
 export async function createNanoEdgeRT(
   db: string | DatabaseContext,
@@ -49,13 +51,17 @@ export async function createNanoEdgeRT(
     });
   };
   app.use("/docs", swaggerUI({ url: "/openapi.json" }));
-  app.get("/openapi.json", (c) => c.json(openapi, 200));
+  app.get("/openapi.json", (c: Context) => c.json(openapi, 200));
   app.get("/health", status);
   app.get("/status", status);
   app.get("/static/*", serveStatic({ root: "./" }));
+
   app.route("/api/docs", setupDocsRoutes(serviceManagerState));
   app.route("/api/v2", setupApiRoutes(serviceManagerState));
+  app.route("/functions/v2", setupFunctionAPIRoutes(dbContext));
   app.route("/admin-api/v2", setupAdminAPIRoutes(dbContext));
+  app.route("/jwt", setupJWTRoutes());
+
   const abortController = new AbortController();
   return [app, dbContext.config?.main_port || 8000, abortController, serviceManagerState];
 }

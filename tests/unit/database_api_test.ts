@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { Hono } from "hono";
-import { databaseMiddleware, setupAPIRoutes } from "../../database/api.ts";
+import { databaseMiddleware, setupAPIRoutes } from "../../database/api.service.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
 import { createIsolatedDb } from "../test_utils.ts";
 
