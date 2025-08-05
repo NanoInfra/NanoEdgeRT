@@ -21,7 +21,7 @@ declare module "hono" {
 const secret = "my_super_duper_secret_key_for_admin_jwt";
 
 export async function createJWT(payload: JWTPayload): Promise<string> {
-  const jwt = await sign(payload, secret);
+  const jwt = await sign(payload, secret, "HS256");
   return jwt;
 }
 
@@ -35,12 +35,9 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   }
 }
 
-export function jwtCheck(c: Context, next: MiddlewareHandler) {
-  return jwt({
-    secret,
-    algorithms: ["HS256"],
-  })(c, next);
-}
+// export function jwtCheck(c: Context, next: MiddlewareHandler) {
+//   return
+// }
 
 async function hostFrontendHandler(c: Context): Promise<Response> {
   try {
@@ -141,7 +138,10 @@ export function setupAdminAPIRoutes(
   const app = new Hono();
   app.use(
     "*",
-    jwtCheck,
+    jwt({
+      secret,
+      // algorithms: ["HS256"],
+    }),
   );
 
   setupAPIRoutes(app, dbContext);
