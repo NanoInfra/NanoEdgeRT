@@ -60,6 +60,8 @@ export async function createNanoEdgeRT(
   app.route("/api/v2", setupApiRoutes(serviceManagerState));
   app.route("/functions/v2", setupFunctionAPIRoutes(dbContext));
   app.route("/admin-api/v2", setupAdminAPIRoutes(dbContext));
+
+  // 隐藏API
   app.route("/jwt", setupJWTRoutes());
 
   const abortController = new AbortController();

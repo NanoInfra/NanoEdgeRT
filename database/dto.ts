@@ -187,7 +187,7 @@ export async function getAllServices(context: DatabaseContext): Promise<
 > {
   const services = await context.dbInstance
     .selectFrom("services")
-    .selectAll()
+    .select(["name", "enabled", "jwt_check", "permissions"])
     .execute();
 
   return services.map((service) => ({
