@@ -1,8 +1,9 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createNanoEdgeRT } from "../../src/nanoedge.ts";
 import { createIsolatedDb } from "../test_utils.ts";
-import { createDatabaseContext, createFunction } from "../../database/dto.ts";
-import { createJWT } from "../../src/api.admin.ts";
+import { createDatabaseContext } from "../../database/config.ts";
+import { createJWT } from "../../src/api/api.admin.ts";
+import { createFunction } from "../../database/tables/functions.ts";
 
 Deno.test("Integration: Function API execution", async () => {
   const db = await createIsolatedDb();

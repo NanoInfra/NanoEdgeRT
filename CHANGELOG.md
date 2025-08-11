@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2025-08-11
+
+### 🚀 Service Architecture Enhancement & Runtime Modernization
+
+### Added
+
+- 🔧 **Extended Deno Runtime Support** - Added additional unstable features
+  - `byonm` (Bring Your Own Node Modules) support
+  - `node-globals` for better Node.js compatibility
+  - `sloppy-imports` for improved module resolution
+- 📁 **Enhanced Static File Serving** - Improved static asset handling for services
+  - Services can now serve static files from `/dist/` endpoint
+  - Better file system integration with service workers
+  - Support for CSS, HTML, and other static assets
+- 🔗 **Improved Service URL Rewriting** - Better request routing for services
+  - Clean URL path handling for service endpoints
+  - Enhanced service-to-service communication
+
+### Changed
+
+- 🏗️ **Service Code Architecture** - Modernized service execution pattern
+  - Services now use `Deno.serve()` instead of export default functions
+  - Direct server setup within service code for better control
+  - Improved service lifecycle management
+- ⚡ **Worker Management** - Enhanced service worker implementation
+  - Better error handling in service startup
+  - Improved abort controller usage for graceful shutdowns
+  - More robust service initialization process
+- 🛡️ **Permission System** - Enhanced security model
+  - More granular file system permissions for services
+  - Better integration between service permissions and static file access
+  - Improved URL-based permission mapping
+
+### Fixed
+
+- 🔧 **Static File Access** - Resolved issues with service static file serving
+- 📡 **Service Communication** - Fixed service endpoint routing issues
+- 🧪 **Test Compatibility** - Updated test cases to work with new service architecture
+
+### Technical Details
+
+- Removed legacy static file serving middleware from main server
+- Updated service manager to handle new `Deno.serve()` pattern
+- Enhanced service worker adapter code for better reliability
+- Improved service URL rewriting logic for better path handling
+
 ## [2.5.0] - 2025-08-03
 
 ### 🚀 Function Management System

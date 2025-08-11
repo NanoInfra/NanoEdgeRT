@@ -1,14 +1,13 @@
 import type { Context, Next } from "hono";
 import type { Hono } from "hono";
+import { DatabaseContext, updateConfig } from "../config.ts";
 import {
   createService,
-  DatabaseContext,
   deleteService,
   getAllServices,
   getService,
-  updateConfig,
   updateService,
-} from "./dto.ts";
+} from "../tables/services.ts";
 
 // Extend Hono's Context to include our database context
 declare module "hono" {

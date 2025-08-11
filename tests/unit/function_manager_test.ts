@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createIsolatedDb } from "../test_utils.ts";
-import { createDatabaseContext } from "../../database/dto.ts";
+import { createDatabaseContext } from "../../database/config.ts";
 import { createFunctionManagerState, execFunction } from "../../src/managers/function-manager.ts";
 
 Deno.test("createFunctionManagerState - should create valid state", async () => {

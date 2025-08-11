@@ -1,8 +1,8 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createNanoEdgeRT } from "../../src/nanoedge.ts";
 import { createIsolatedDb } from "../test_utils.ts";
-import { createDatabaseContext } from "../../database/dto.ts";
-import { createJWT } from "../../src/api.admin.ts";
+import { createDatabaseContext } from "../../database/config.ts";
+import { createJWT } from "../../src/api/api.admin.ts";
 import JSZip from "jszip";
 
 Deno.test("Integration: Admin API authentication flow", async () => {
@@ -294,29 +294,11 @@ Deno.test("Integration: Frontend hosting API", async () => {
 
     // Create mock files for testing
     const serverCode = `
-export default async function handler(req) {
-  const url = new URL(req.url);
-  let filePath = globalThis.staticDir;
-  if (url.pathname === "/" || url.pathname === "") {
-    filePath += 'index.html';
-  } else {
-    filePath += url.pathname;
-  }
-  const filePathURL = new URL(filePath, import.meta.url);
-  try {
-    const file = await Deno.readFile(filePathURL);
-    let contentType = "text/html";
-    if (url.pathname.endsWith(".css")) {
-    contentType = "text/css";
-    }
-    return new Response(file, {
-    headers: { 'Content-Type': contentType }
-    });
-  } catch {
-    console.error("File not found:", filePathURL);
-    return new Response('Not Found', { status: 404 });
-  }
-}
+async function handler(req) {
+  return new Response("Hello from test service");
+};
+
+Deno.serve(handler)
 `;
 
     // Create a simple ZIP file containing an index.html
@@ -372,7 +354,7 @@ export default async function handler(req) {
     // fetch the service created here
     // Test that the service is actually running and serving files
     const serviceResponse = await app.fetch(
-      new Request(`http://localhost:${port}/api/v2/my-frontend/index.html`),
+      new Request(`http://localhost:${port}/api/v2/my-frontend/dist/index.html`),
     );
     assertEquals(serviceResponse.status, 200);
 
@@ -382,13 +364,13 @@ export default async function handler(req) {
 
     // Test CSS file serving
     const cssResponse = await app.fetch(
-      new Request(`http://localhost:${port}/api/v2/my-frontend/assets/style.css`),
+      new Request(`http://localhost:${port}/api/v2/my-frontend/dist/assets/style.css`),
     );
     assertEquals(cssResponse.status, 200);
 
     const cssResponseContent = await cssResponse.text();
     console.log("CSS Content:", cssResponseContent);
-    assertEquals(cssResponse.headers.get("Content-Type"), "text/css");
+    assertEquals(cssResponse.headers.get("Content-Type"), "text/css; charset=UTF-8");
     assertEquals(cssResponseContent, "body { font-family: Arial; }");
 
     try {

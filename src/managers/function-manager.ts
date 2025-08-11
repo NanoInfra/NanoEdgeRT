@@ -1,4 +1,5 @@
-import { DatabaseContext, FunctionConfig } from "../../database/dto.ts";
+import { DatabaseContext } from "../../database/config.ts";
+import { FunctionConfig } from "../../database/tables/functions.ts";
 
 export interface FunctionManagerState {
   functions: Map<string, FunctionConfig>;
@@ -55,12 +56,6 @@ globalThis.staticDir = "${staticDir.toString()}";
 ${functionCode}
 `;
     const handlerURI = "data:application/javascript," + encodeURIComponent(handlerCode);
-
-    // TODO: everything change to generator logic
-    // direct use readablestream as response
-    // set header in worker instead of adapter
-    // 1. header
-    // 2. stream
 
     const workerAdapterCode = `
 let __handler;

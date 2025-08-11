@@ -4,14 +4,14 @@ import {
   assertRejects,
 } from "https://deno.land/std@0.208.0/assert/mod.ts";
 
+import { createOrLoadDatabase } from "../../database/tables/index.ts";
+import { createIsolatedDb } from "../test_utils.ts";
 import {
   allocatePort,
-  createOrLoadDatabase,
   getAllocatedPorts,
   getServicePort,
   releasePort,
-} from "../../database/sqlite3.ts";
-import { createIsolatedDb } from "../test_utils.ts";
+} from "../../database/tables/services.ts";
 
 Deno.test("createOrLoadDatabase - should create in-memory database", async () => {
   const db = await createIsolatedDb();

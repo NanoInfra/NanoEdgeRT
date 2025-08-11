@@ -1,8 +1,9 @@
 import { Context } from "hono";
 import { Hono } from "hono";
-import { DatabaseContext, getFunction } from "../database/dto.ts";
-import { createFunctionManagerState, execFunction } from "./managers/function-manager.ts";
-import { databaseMiddleware } from "../database/api.service.ts";
+import { createFunctionManagerState, execFunction } from "../managers/function-manager.ts";
+import { databaseMiddleware } from "../../database/api/api.service.ts";
+import { DatabaseContext } from "../../database/config.ts";
+import { getFunction } from "../../database/tables/functions.ts";
 
 // Setup function execution API routes
 export function setupFunctionAPIRoutes(dbContext: DatabaseContext) {

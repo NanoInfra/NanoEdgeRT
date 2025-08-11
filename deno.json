@@ -1,19 +1,19 @@
 {
   "name": "NanoEdgeRT",
-  "version": "2.5.0",
+  "version": "2.7.0",
   "description": "A lightweight, high-performance edge function runtime built with Deno",
   "imports": {
-    "hono": "https://esm.sh/hono@4.8.9",
-    "hono/cors": "https://esm.sh/hono@4.8.9/dist/middleware/cors",
-    "hono/logger": "https://esm.sh/hono@4.8.9/dist/middleware/logger",
-    "hono/jwt": "https://esm.sh/hono@4.8.9/dist/middleware/jwt",
-    "@hono/swagger-ui": "https://esm.sh/@hono/swagger-ui@0.5.2?deps=hono@4.8.9",
-    "@hono/node-server/serve-static": "https://esm.sh/@hono/node-server/serve-static?deps=hono@4.8.9",
+    "hono": "npm:hono@^4.8.9",
+    "@hono/swagger-ui": "npm:@hono/swagger-ui",
     "kysely": "npm:kysely@^0.28.3",
     "jszip": "https://esm.sh/jszip@^3.10.1"
   },
   "unstable": [
-    "worker-options"
+    "worker-options",
+    "byonm",
+    "node-globals",
+    "sloppy-imports",
+    "raw-imports"
   ],
   "tasks": {
     "start": "deno run --allow-all --unstable-worker-options src/nanoedge.ts",

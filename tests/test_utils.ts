@@ -1,5 +1,5 @@
-import { createOrLoadDatabase } from "../database/sqlite3.ts";
-import { ServiceConfig } from "../database/dto.ts";
+import { createOrLoadDatabase } from "../database/tables/index.ts";
+import { ServiceConfig } from "../database/tables/services.ts";
 
 let port = 9000; // Base port for tests
 export async function createIsolatedDb() {

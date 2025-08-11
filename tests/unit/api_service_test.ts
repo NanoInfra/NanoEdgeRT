@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { setupApiRoutes, setupDocsRoutes } from "../../src/api.service.ts";
-import { createDatabaseContext } from "../../database/dto.ts";
+import { setupApiRoutes, setupDocsRoutes } from "../../src/api/api.service.ts";
+import { createDatabaseContext } from "../../database/config.ts";
 import { createServiceManagerState } from "../../src/managers/service-manager.ts";
 import { createIsolatedDb } from "../test_utils.ts";
 
@@ -182,7 +182,7 @@ Deno.test("setupApiRoutes - should handle service startup", async () => {
     .values({
       name: "test-service",
       code:
-        "export default async function handler(req) { return new Response(JSON.stringify({message: 'hello'}), {headers: {'Content-Type': 'application/json'}}); }",
+        "async function handler(req) { return new Response(JSON.stringify({message: 'hello'}), {headers: {'Content-Type': 'application/json'}}); }; Deno.serve(handler)",
       enabled: true,
       jwt_check: false,
       permissions: JSON.stringify({ read: [], write: [], env: [], run: [] }),
