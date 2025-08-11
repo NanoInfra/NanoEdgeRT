@@ -1,4 +1,4 @@
-# 🚀 NanoEdgeRT v2.5
+# 🚀 NanoEdgeRT v2.7
 
 [![CI](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml/badge.svg)](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml)
 [![Deno](https://img.shields.io/badge/Deno-000000?style=for-the-badge&logo=deno&logoColor=white)](https://deno.land/)
@@ -73,7 +73,6 @@ graph TB
     PublicRouter --> Health["/health"]
     PublicRouter --> Status["/status"]
     PublicRouter --> Docs["/docs"]
-    PublicRouter --> Static["/static"]
     
     AdminRouter --> AdminAPI["/admin-api/v2/*"]
     AdminRouter --> FunctionAdmin["/admin-api/v2/functions/*"]
@@ -407,13 +406,13 @@ data: [DONE]"Completed!"
 
 ### 🚀 Deploy Frontend Applications
 
-NanoEdgeRT v2.5 introduces powerful frontend hosting capabilities, allowing you to deploy full-stack applications with custom server logic and static assets.
+NanoEdgeRT v2.7 introduces powerful frontend hosting capabilities, allowing you to deploy full-stack applications with custom server logic and static assets.
 
 #### How It Works
 
 1. **Upload Server JS File** - JavaScript file that handles dynamic routing and server logic
 2. **Upload Static Assets ZIP** - ZIP file containing your frontend assets (HTML, CSS, JS, images, etc.)
-3. **Automatic Extraction** - Static files are automatically extracted to `./static/{serviceName}/`
+3. **Automatic Extraction** - Static files are automatically extracted to `/api/v2/{serviceName}/dist/**`
 4. **Service Creation** - A new service is created with read permissions to the static directory
 
 #### Example Deployment
