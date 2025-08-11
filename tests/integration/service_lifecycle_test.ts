@@ -1,7 +1,8 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createNanoEdgeRT } from "../../src/nanoedge.ts";
-import { createDatabaseContext, createService, getService } from "../../database/dto.ts";
+import { createDatabaseContext } from "../../database/config.ts";
 import { createIsolatedDb } from "../test_utils.ts";
+import { createService, getService } from "../../database/tables/services.ts";
 
 Deno.test("Integration: Service lifecycle from creation to execution", async () => {
   const db = await createIsolatedDb();

@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { setupApiRoutes, setupDocsRoutes } from "../../src/api.service.ts";
-import { createDatabaseContext } from "../../database/dto.ts";
+import { setupApiRoutes, setupDocsRoutes } from "../../src/api/api.service.ts";
+import { createDatabaseContext } from "../../database/config.ts";
 import { createServiceManagerState } from "../../src/managers/service-manager.ts";
 import { createIsolatedDb } from "../test_utils.ts";
 

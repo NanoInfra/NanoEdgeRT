@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { createJWT, setupAdminAPIRoutes } from "../../src/api.admin.ts";
-import { createDatabaseContext } from "../../database/dto.ts";
+import { createJWT, setupAdminAPIRoutes } from "../../src/api/api.admin.ts";
+import { createDatabaseContext } from "../../database/config.ts";
 import { createIsolatedDb } from "../test_utils.ts";
 
 Deno.test("setupAdminAPIRoutes - should create admin router with JWT middleware", async () => {

@@ -5,7 +5,7 @@ import {
 } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createNanoEdgeRT } from "../../src/nanoedge.ts";
 import { createIsolatedDb } from "../test_utils.ts";
-import { createDatabaseContext } from "../../database/dto.ts";
+import { createDatabaseContext } from "../../database/config.ts";
 
 Deno.test("createNanoEdgeRT - should create server with default configuration", async () => {
   const [app, port, abortController, serviceManagerState] = await createNanoEdgeRT(":memory:");

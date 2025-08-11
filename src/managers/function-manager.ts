@@ -1,4 +1,5 @@
-import { DatabaseContext, FunctionConfig } from "../../database/dto.ts";
+import { DatabaseContext } from "../../database/config.ts";
+import { FunctionConfig } from "../../database/tables/functions.ts";
 
 export interface FunctionManagerState {
   functions: Map<string, FunctionConfig>;

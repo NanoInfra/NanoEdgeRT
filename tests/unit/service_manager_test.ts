@@ -12,8 +12,8 @@ import {
   stopAllServices,
   stopService,
 } from "../../src/managers/service-manager.ts";
-import { createDatabaseContext } from "../../database/dto.ts";
-import { createOrLoadDatabase } from "../../database/sqlite3.ts";
+import { createDatabaseContext } from "../../database/config.ts";
+import { createOrLoadDatabase } from "../../database/tables/index.ts";
 
 Deno.test("createServiceManagerState - should create valid state", async () => {
   const db = await createOrLoadDatabase(":memory:");

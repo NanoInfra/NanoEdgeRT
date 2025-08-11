@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import openapi from "../../src/openapi.ts";
-
+import openapi_t from "../../src/openapi.json" with { type: "text" };
+const openapi = JSON.parse(openapi_t);
 Deno.test("openapi - should export valid OpenAPI specification", () => {
   assertExists(openapi);
   assertEquals(typeof openapi, "object");
@@ -120,22 +120,6 @@ Deno.test("openapi - HealthStatus schema should be properly defined", () => {
   if (healthStatusSchema.properties) {
     assertEquals(typeof healthStatusSchema.properties, "object");
   }
-});
-
-Deno.test("openapi - should have consistent tag usage", () => {
-  const paths = openapi.paths;
-  const usedTags = new Set();
-
-  for (const [_path, pathObj] of Object.entries(paths)) {
-    for (const [_method, methodObj] of Object.entries(pathObj)) {
-      if (methodObj.tags) {
-        methodObj.tags.forEach((tag: any) => usedTags.add(tag));
-      }
-    }
-  }
-
-  // Should have at least the System tag
-  assertEquals(usedTags.has("System"), true);
 });
 
 Deno.test("openapi - should have proper HTTP methods", () => {

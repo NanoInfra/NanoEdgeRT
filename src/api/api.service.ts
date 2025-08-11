@@ -1,12 +1,13 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
-import { getService as getServiceFromDB, loadConfig } from "../database/dto.ts";
+import { loadConfig } from "../../database/config.ts";
+import { getService as getServiceFromDB } from "../../database/tables/services.ts";
 import {
   getService,
   ServiceInstance,
   ServiceManagerState,
   startService,
-} from "./managers/service-manager.ts";
+} from "../managers/service-manager.ts";
 import { verifyJWT } from "./api.admin.ts";
 
 // Service-specific documentation routes

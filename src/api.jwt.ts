@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Context } from "hono";
-import { createJWT, JWTPayload } from "./api.admin.ts";
+import { createJWT, JWTPayload } from "./api/api.admin.ts";
 
 // Localhost-only middleware
 const localhostOnly = async (c: Context, next: () => Promise<void>) => {

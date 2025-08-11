@@ -1,5 +1,10 @@
-import { DatabaseContext, ServiceConfig } from "../../database/dto.ts";
-import { allocatePort, getServicePort, releasePort } from "../../database/sqlite3.ts";
+import { DatabaseContext } from "../../database/config.ts";
+import {
+  allocatePort,
+  getServicePort,
+  releasePort,
+  ServiceConfig,
+} from "../../database/tables/services.ts";
 
 export interface ServiceInstance {
   config: ServiceConfig;

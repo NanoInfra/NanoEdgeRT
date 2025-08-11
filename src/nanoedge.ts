@@ -2,20 +2,20 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { Hono } from "hono";
 import { swaggerUI } from "@hono/swagger-ui";
-import { createOrLoadDatabase } from "../database/sqlite3.ts";
-import { createDatabaseContext, DatabaseContext } from "../database/dto.ts";
+import { createOrLoadDatabase } from "../database/tables/index.ts";
+import { createDatabaseContext, DatabaseContext } from "../database/config.ts";
 import {
   createServiceManagerState,
   getAllServices,
   ServiceManagerState,
   stopAllServices,
 } from "./managers/service-manager.ts";
-import { setupApiRoutes, setupDocsRoutes } from "./api.service.ts";
-import { setupAdminAPIRoutes } from "./api.admin.ts";
+import { setupApiRoutes, setupDocsRoutes } from "./api/api.service.ts";
+import { setupAdminAPIRoutes } from "./api/api.admin.ts";
 import { setupJWTRoutes } from "./api.jwt.ts";
 import { Context } from "hono";
-import openapi from "./openapi.ts";
-import { setupFunctionAPIRoutes } from "./api.function.ts";
+import openapi from "./openapi.json" with { type: "json" };
+import { setupFunctionAPIRoutes } from "./api/api.function.ts";
 
 export async function createNanoEdgeRT(
   db: string | DatabaseContext,

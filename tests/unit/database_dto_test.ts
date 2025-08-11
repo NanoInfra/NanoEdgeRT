@@ -1,16 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { createDatabaseContext, loadConfig, updateConfig } from "../../database/config.ts";
+import { createIsolatedDb } from "../test_utils.ts";
 import {
-  createDatabaseContext,
   createService,
   deleteService,
   getAllServices,
   getService,
-  loadConfig,
-  updateConfig,
   updateService,
-} from "../../database/dto.ts";
-import { createIsolatedDb } from "../test_utils.ts";
+} from "../../database/tables/services.ts";
 
 Deno.test("createDatabaseContext - should create valid context", async () => {
   const db = await createIsolatedDb();

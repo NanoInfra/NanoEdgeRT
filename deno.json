@@ -1,6 +1,6 @@
 {
   "name": "NanoEdgeRT",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "A lightweight, high-performance edge function runtime built with Deno",
   "imports": {
     "hono": "npm:hono@^4.8.9",
@@ -12,7 +12,8 @@
     "worker-options",
     "byonm",
     "node-globals",
-    "sloppy-imports"
+    "sloppy-imports",
+    "raw-imports"
   ],
   "tasks": {
     "start": "deno run --allow-all --unstable-worker-options src/nanoedge.ts",
