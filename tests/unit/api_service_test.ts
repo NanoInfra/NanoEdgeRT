@@ -182,7 +182,7 @@ Deno.test("setupApiRoutes - should handle service startup", async () => {
     .values({
       name: "test-service",
       code:
-        "export default async function handler(req) { return new Response(JSON.stringify({message: 'hello'}), {headers: {'Content-Type': 'application/json'}}); }",
+        "async function handler(req) { return new Response(JSON.stringify({message: 'hello'}), {headers: {'Content-Type': 'application/json'}}); }; Deno.serve(handler)",
       enabled: true,
       jwt_check: false,
       permissions: JSON.stringify({ read: [], write: [], env: [], run: [] }),

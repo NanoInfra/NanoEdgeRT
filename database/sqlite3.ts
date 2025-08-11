@@ -256,25 +256,27 @@ export async function initializeDatabase(
     console.log("🌱 Seeding database with default services...");
 
     // Hello service
-    const helloService = `export default async function handler(req) {
-  const url = new URL(req.url);
-  const name = url.searchParams.get("name") || "World";
-  
-  return new Response(
-    JSON.stringify({ 
-      message: \`Hello, \${name}!\`,
-      timestamp: new Date().toISOString(),
-      method: req.method,
-      path: url.pathname,
-    }),
-    {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-}`;
+    const helloService = `Deno.serve(async (req) => {
+    const url = new URL(req.url);
+    const name = url.searchParams.get("name") || "World";
+
+    return new Response(
+      JSON.stringify({
+        message: \`Hello, \${name}!\`,
+        meta: import.meta.url,
+        staticUrl: globalThis.staticUrl,
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        path: url.pathname,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  })`;
 
     // OpenAPI schema for hello service
     const helloSchema = JSON.stringify({

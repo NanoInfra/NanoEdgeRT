@@ -4,7 +4,7 @@ export default {
     "title": "NanoEdgeRT API",
     "description":
       "NanoEdgeRT is a dynamic service management platform that allows you to create, manage, and run JavaScript-based microservices with JWT authentication, OpenAPI documentation, and real-time service orchestration.",
-    "version": "2.1.0",
+    "version": "2.6.0",
     "contact": {
       "name": "NanoEdgeRT",
       "url": "https://github.com/LemonHX/NanoEdgeRT",

@@ -76,67 +76,73 @@ export async function startService(
     }
 
     const serviceCode = serviceConfig.code;
-    const staticDir = new URL(`../../static/${serviceConfig.name}/`, import.meta.url);
-    const handlerCode = `
-globalThis.staticDir = "${staticDir.toString()}";
+    const staticDir = `static/${serviceConfig.name}/`;
+    const staticUrl = new URL(`../../${staticDir}`, import.meta.url);
+    const rewriteDenoServe = `
+import { serveDir } from "jsr:@std/http/file-server";
+const ____AC = new AbortController();
+const __import_meta = import.meta.url;
+globalThis.staticUrl = new URL("${staticUrl.toString()}").href;
+import.meta.url = new URL("${staticDir}virtual_worker_${serviceConfig.name}.ts", staticUrl).href;
+const ___serve = Deno.serve;
+Deno.serve = (...params) => {
+  const handler = params.length === 2 ? params[1] : params[0];
+  return ___serve({
+    port: ${port},
+    signal: ____AC.signal,
+  }, async (req, info) => {
+    const url = new URL(req.url);
+    const pathSegments = url.pathname.split("/").filter(s => s);
 
+    // Remove 'api', 'v2', and service name from path
+    if (pathSegments[0] === "api" && pathSegments[1] === "v2" && pathSegments[2] === "${serviceConfig.name}") {
+    pathSegments.splice(0, 3);
+    }
+
+    const newPath = "/" + pathSegments.join("/");
+    const rewrittenUrl = "http://${serviceConfig.name}" + newPath + url.search;
+
+    const newReq = new Request(rewrittenUrl, {
+    method: req.method,
+    headers: req.headers,
+    body: req.body,
+    credentials: req.credentials,
+    });
+
+    // /api/v2/<serviceName>/dist to serve static files
+    if (pathSegments[0] === "dist") {
+      const staticPath = pathSegments.slice(1).join("/");
+      return serveDir(newReq, {
+        fsRoot: "${staticDir}",
+        urlRoot: 'dist'
+      });
+    }
+
+    return await handler(newReq, info);
+  });
+};
+    `;
+
+    const handlerCode = `
+${rewriteDenoServe}
 ${serviceCode}
 `;
     const handlerURI = "data:application/javascript," + encodeURIComponent(handlerCode);
     const workerAdapterCode = `
-const __handler = (await import(\`${handlerURI}\`)).default;
-if (typeof __handler !== 'function') {
-  throw new Error('Handler must be a function');
-}
-
-const __handler_rewriter = async (req) => {
-  const url = new URL(req.url);
-  const pathSegments = url.pathname.split("/").filter(s => s);
-
-  // Remove 'api', 'v2', and service name from path
-  if (pathSegments[0] === "api" && pathSegments[1] === "v2" && pathSegments[2] === "${serviceConfig.name}") {
-  pathSegments.splice(0, 3);
-  }
-
-  const newPath = "/" + pathSegments.join("/");
-  const rewrittenUrl = "http://${serviceConfig.name}" + newPath + url.search;
-
-  const newReq = new Request(rewrittenUrl, {
-  method: req.method,
-  headers: req.headers,
-  body: req.body,
-  credentials: req.credentials,
-  });
-
-  return await __handler(newReq);
-};
-
-const ____AC = new AbortController();
 
 // Handle server startup
-(async () => {
+try {
+  const module = await import(\`${handlerURI}\`)
   try {
-  await Deno.serve({
-    port: ${port},
-    signal: ____AC.signal,
-  }, async (req) => {
-    try {
-    return await __handler_rewriter(req);
-    } catch (error) {
-    console.error("Request error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || String(error) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-    }
-  }).finished;
-  } catch (error) {
-  self.postMessage({
-    type: "startup_error",
-    error: error.message || String(error),
-  });
+    const __handler = module.default;
+    await __handler();
+  } catch {
+  } finally {
+    console.log("Service started successfully");
   }
-})();
+} catch {
+    throw new Error("Service failed to initialize");
+}
 
 self.onmessage = async (event) => {
   if (event.data === "stop") {
@@ -156,10 +162,11 @@ self.onmessage = async (event) => {
         deno: {
           permissions: {
             net: true,
-            read: serviceConfig.permissions?.read.map((urlString) => new URL(urlString)) || [],
-            write: serviceConfig.permissions?.write || [],
+            read: (serviceConfig.permissions?.read.map((urlString) => new URL(urlString)) || [])
+              .concat([new URL(`../../${staticDir}`, import.meta.url)]),
+            write: serviceConfig.permissions?.write.map((urlString) => new URL(urlString)) || [],
             env: serviceConfig.permissions?.env || [],
-            run: serviceConfig.permissions?.run || [],
+            run: serviceConfig.permissions?.run.map((urlString) => new URL(urlString)) || [],
           },
         },
       },

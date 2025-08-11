@@ -11,7 +11,7 @@ Deno.test("Integration: Service lifecycle from creation to execution", async () 
   // Create a new service via database API
   const serviceData = {
     name: "test-lifecycle-service",
-    code: `export default async function handler(req) {
+    code: `async function handler(req) {
         const url = new URL(req.url);
         return new Response(JSON.stringify({
           message: "Hello from test service",
@@ -21,7 +21,7 @@ Deno.test("Integration: Service lifecycle from creation to execution", async () 
           status: 200,
           headers: { "Content-Type": "application/json" }
         });
-      }`,
+      }; Deno.serve(handler)`,
     enabled: true,
     jwt_check: false,
     permissions: { read: [], write: [], env: [], run: [] },

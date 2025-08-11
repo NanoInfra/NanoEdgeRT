@@ -1,5 +1,5 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { createJWT, jwtCheck, setupAdminAPIRoutes } from "../../src/api.admin.ts";
+import { createJWT, setupAdminAPIRoutes } from "../../src/api.admin.ts";
 import { createDatabaseContext } from "../../database/dto.ts";
 import { createIsolatedDb } from "../test_utils.ts";
 
@@ -101,11 +101,4 @@ Deno.test("setupAdminAPIRoutes - should use default JWT secret when env not set"
   );
 
   assertEquals(response.status, 401);
-});
-
-Deno.test("jwtCheck - middleware function should exist", () => {
-  // This test just verifies that jwtCheck is exportable and callable
-  // Full JWT validation testing would require more complex setup
-  assertExists(jwtCheck);
-  assertEquals(typeof jwtCheck, "function");
 });

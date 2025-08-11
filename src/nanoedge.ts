@@ -2,7 +2,6 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { Hono } from "hono";
 import { swaggerUI } from "@hono/swagger-ui";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { createOrLoadDatabase } from "../database/sqlite3.ts";
 import { createDatabaseContext, DatabaseContext } from "../database/dto.ts";
 import {
@@ -54,7 +53,6 @@ export async function createNanoEdgeRT(
   app.get("/openapi.json", (c: Context) => c.json(openapi, 200));
   app.get("/health", status);
   app.get("/status", status);
-  app.get("/static/*", serveStatic({ root: "./" }));
 
   app.route("/api/docs", setupDocsRoutes(serviceManagerState));
   app.route("/api/v2", setupApiRoutes(serviceManagerState));

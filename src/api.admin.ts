@@ -1,4 +1,4 @@
-import { Hono, MiddlewareHandler } from "hono";
+import { Hono } from "hono";
 import { jwt, sign, verify } from "hono/jwt";
 import { setupAPIRoutes } from "../database/api.service.ts";
 import { setupFunctionAPIRoutes } from "../database/api.function.ts";
