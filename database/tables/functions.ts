@@ -22,15 +22,6 @@ export interface FunctionConfig {
   description?: string;
 }
 
-export interface Config {
-  available_port_start: number;
-  available_port_end: number;
-  services: ServiceConfig[];
-  jwt_secret?: string;
-  main_port?: number;
-  function_execution_timeout?: number; // Timeout in milliseconds for function execution
-}
-
 // Function management operations
 export async function createFunction(
   context: DatabaseContext,

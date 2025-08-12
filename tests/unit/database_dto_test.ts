@@ -31,12 +31,10 @@ Deno.test("loadConfig - should load default configuration", async () => {
   assertExists(config.available_port_end);
   assertExists(config.main_port);
   assertExists(config.jwt_secret);
-  assertExists(config.services);
 
   assertEquals(typeof config.available_port_start, "number");
   assertEquals(typeof config.available_port_end, "number");
   assertEquals(typeof config.main_port, "number");
-  assertEquals(Array.isArray(config.services), true);
 });
 
 Deno.test("loadConfig - should return cached config on subsequent calls", async () => {
@@ -269,33 +267,4 @@ Deno.test("createService - should handle duplicate names", async () => {
     // If it throws, that's also acceptable behavior
     assertExists(error);
   }
-});
-
-Deno.test("loadConfig - should include enabled services only", async () => {
-  const db = await createIsolatedDb();
-  const context = await createDatabaseContext(db);
-
-  // Create enabled and disabled services
-  await createService(context, {
-    name: "enabled-service",
-    code: "code1",
-    enabled: true,
-    jwt_check: false,
-    permissions: { read: [], write: [], env: [], run: [] },
-  });
-
-  await createService(context, {
-    name: "disabled-service",
-    code: "code2",
-    enabled: false,
-    jwt_check: false,
-    permissions: { read: [], write: [], env: [], run: [] },
-  });
-
-  // Clear cached config to force reload
-  const config = await loadConfig(context.dbInstance);
-
-  const enabledServiceNames = config.services.map((s) => s.name);
-  assertEquals(enabledServiceNames.includes("enabled-service"), true);
-  assertEquals(enabledServiceNames.includes("disabled-service"), false);
 });

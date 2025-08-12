@@ -1,7 +1,13 @@
 import type { Kysely } from "kysely";
 import type { Database } from "./tables/index.ts";
-import { Config } from "./tables/functions.ts";
-import { ServiceConfig, ServicePermissions } from "./tables/services.ts";
+
+export interface Config {
+  available_port_start: number;
+  available_port_end: number;
+  jwt_secret?: string;
+  main_port?: number;
+  function_execution_timeout?: number; // Timeout in milliseconds for function execution
+}
 
 export interface DatabaseContext {
   dbInstance: Kysely<Database>;
@@ -27,28 +33,11 @@ export async function loadConfig(dbInstance: Kysely<Database>): Promise<Config> 
 
   const configMap = new Map(configRows.map((row) => [row.key, row.value]));
 
-  // Load services from database
-  const serviceRows = await dbInstance
-    .selectFrom("services")
-    .selectAll()
-    .where("enabled", "=", true)
-    .execute();
-
-  const services: ServiceConfig[] = serviceRows.map((row) => ({
-    name: row.name,
-    enabled: Boolean(row.enabled),
-    jwt_check: Boolean(row.jwt_check),
-    permissions: JSON.parse(row.permissions) as ServicePermissions,
-    code: row.code,
-    schema: row.schema, // Include schema field
-  }));
-
   const config: Config = {
     available_port_start: parseInt(configMap.get("available_port_start") as string || "8001"),
     available_port_end: parseInt(configMap.get("available_port_end") as string || "8999"),
     main_port: parseInt(configMap.get("main_port") as string || "8000"),
     jwt_secret: configMap.get("jwt_secret") as string || "default-secret-change-me",
-    services,
   };
 
   return config;
