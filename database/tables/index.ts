@@ -3,7 +3,7 @@ import { Database as Sqlite } from "jsr:@db/sqlite";
 import { DenoSqliteDialect } from "../kysely_deno_sqlite3_adapter.ts";
 import { FunctionTable, up as functionUp } from "./functions.ts";
 import { PortTable, ServiceTable, up as serviceUp } from "./services.ts";
-import { QueueTable, TaskTable, TraceTable, up as taskUp } from "./tasks.ts";
+import { TaskTable, up as taskUp } from "./tasks.ts";
 
 // Database schema types
 
@@ -20,12 +20,10 @@ export interface Database {
   config: ConfigTable;
   ports: PortTable;
   tasks: TaskTable;
-  queue: QueueTable;
-  trace: TraceTable;
 }
 
 // Function to create a database instance with custom path
-function createDatabase(dbPath: string) {
+export function createDatabase(dbPath: string) {
   return new Kysely<Database>({
     dialect: new DenoSqliteDialect(new Sqlite(dbPath)),
   });

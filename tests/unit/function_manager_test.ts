@@ -1,23 +1,12 @@
-import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createIsolatedDb } from "../test_utils.ts";
 import { createDatabaseContext } from "../../database/config.ts";
-import { createFunctionManagerState, execFunction } from "../../src/managers/function-manager.ts";
-
-Deno.test("createFunctionManagerState - should create valid state", async () => {
-  const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-
-  const state = createFunctionManagerState(dbContext);
-
-  assertExists(state);
-  assertExists(state.dbContext);
-  assertEquals(state.dbContext, dbContext);
-});
+import { execFunction } from "../../src/managers/function-manager.ts";
+import { createFunction } from "../../database/tables/functions.ts";
 
 Deno.test("execFunction - should execute simple function", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "test-function",
@@ -34,8 +23,9 @@ Deno.test("execFunction - should execute simple function", async () => {
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, {});
+  const response = await execFunction(state, functionConfig.name, {});
 
   assertEquals(response.status, 200);
   assertEquals(response.headers.get("Content-Type"), "application/json");
@@ -46,8 +36,7 @@ Deno.test("execFunction - should execute simple function", async () => {
 
 Deno.test("execFunction - should handle function with parameters", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "param-function",
@@ -65,8 +54,9 @@ Deno.test("execFunction - should handle function with parameters", async () => {
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, { name: "Alice" });
+  const response = await execFunction(state, functionConfig.name, { name: "Alice" });
 
   assertEquals(response.status, 200);
 
@@ -76,8 +66,7 @@ Deno.test("execFunction - should handle function with parameters", async () => {
 
 Deno.test("execFunction - should handle async function", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "async-function",
@@ -95,8 +84,9 @@ Deno.test("execFunction - should handle async function", async () => {
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, {});
+  const response = await execFunction(state, functionConfig.name, {});
   assertEquals(response.status, 200);
   const body = await response.json();
   assertEquals(body, 1);
@@ -104,8 +94,7 @@ Deno.test("execFunction - should handle async function", async () => {
 
 Deno.test("execFunction - should handle function errors", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "error-function",
@@ -122,8 +111,9 @@ Deno.test("execFunction - should handle function errors", async () => {
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, {});
+  const response = await execFunction(state, functionConfig.name, {});
   assertEquals(response.status, 500);
   const body = await response.text();
   assertEquals(body.includes("Function execution error: Function error"), true);
@@ -131,8 +121,7 @@ Deno.test("execFunction - should handle function errors", async () => {
 
 Deno.test("execFunction - should handle invalid function code", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "invalid-function",
@@ -145,8 +134,9 @@ Deno.test("execFunction - should handle invalid function code", async () => {
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, {});
+  const response = await execFunction(state, functionConfig.name, {});
   assertEquals(response.status, 500);
   const body = await response.text();
   assertEquals(body.includes("invalid javascript syntax"), true);
@@ -154,8 +144,7 @@ Deno.test("execFunction - should handle invalid function code", async () => {
 
 Deno.test("execFunction - should handle function with no default export", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "no-export-function",
@@ -172,8 +161,9 @@ Deno.test("execFunction - should handle function with no default export", async 
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, {});
+  const response = await execFunction(state, functionConfig.name, {});
   assertEquals(response.status, 500);
   const body = await response.text();
   assertEquals(body.includes("No default export"), true);
@@ -181,8 +171,7 @@ Deno.test("execFunction - should handle function with no default export", async 
 
 Deno.test("execFunction - should handle complex function with multiple operations", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "complex-function",
@@ -212,8 +201,9 @@ Deno.test("execFunction - should handle complex function with multiple operation
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, { numbers: [10, 20, 30] });
+  const response = await execFunction(state, functionConfig.name, { numbers: [10, 20, 30] });
 
   assertEquals(response.status, 200);
 
@@ -227,8 +217,7 @@ Deno.test("execFunction - should handle complex function with multiple operation
 
 Deno.test("execFunction - should handle generator functions", async () => {
   const db = await createIsolatedDb();
-  const dbContext = await createDatabaseContext(db);
-  const state = createFunctionManagerState(dbContext);
+  const state = await createDatabaseContext(db);
 
   const functionConfig = {
     name: "generator-function",
@@ -247,8 +236,9 @@ Deno.test("execFunction - should handle generator functions", async () => {
       run: [],
     },
   };
+  await createFunction(state, functionConfig);
 
-  const response = await execFunction(state, functionConfig, {});
+  const response = await execFunction(state, functionConfig.name, {});
   assertEquals(response.status, 200);
   assertEquals(response.headers.get("Content-Type"), "text/event-stream");
   const reader = response.body?.getReader();

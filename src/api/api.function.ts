@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { Hono } from "hono";
-import { createFunctionManagerState, execFunction } from "../managers/function-manager.ts";
+import { execFunction } from "../managers/function-manager.ts";
 import { databaseMiddleware } from "../../database/api/api.service.ts";
 import { DatabaseContext } from "../../database/config.ts";
 import { getFunction } from "../../database/tables/functions.ts";
@@ -30,11 +30,8 @@ async function executeFunctionHandler(c: Context): Promise<Response> {
       return c.json({ error: "Function is disabled" }, 403);
     }
 
-    // Create function manager state
-    const functionManagerState = createFunctionManagerState(dbContext);
-
     // Execute the function
-    const result = await execFunction(functionManagerState, functionConfig, await c.req.json());
+    const result = await execFunction(dbContext, functionName, await c.req.json());
 
     return result;
   } catch (error) {

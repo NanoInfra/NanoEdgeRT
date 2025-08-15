@@ -17,8 +17,8 @@ export interface FunctionTable {
 export interface FunctionConfig {
   name: string;
   code: string;
-  enabled: boolean;
   permissions: ServicePermissions;
+  enabled?: boolean;
   description?: string;
 }
 
