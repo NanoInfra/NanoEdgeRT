@@ -962,67 +962,319 @@
         }
       }
     },
-    "/functions/v2/{name}": {
-      "post": {
-        "summary": "Execute function",
-        "description": "Execute a function with the provided input data. Supports both regular responses and streaming responses for generator functions.",
-        "operationId": "executeFunction",
-        "tags": ["Functions"],
+    "/admin-api/tasks": {
+      "get": {
+        "summary": "Get all tasks",
+        "description": "Retrieve a list of all tasks with optional name filtering",
+        "operationId": "getAllTasks",
+        "tags": ["Admin - Tasks"],
+        "security": [{ "jwtAuth": [] }],
         "parameters": [
           {
             "name": "name",
-            "in": "path",
-            "required": true,
+            "in": "query",
+            "required": false,
             "schema": { "type": "string" },
-            "description": "Function name to execute"
+            "description": "Filter tasks by name"
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "type": "object", "description": "Input data for the function execution" }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Function executed successfully",
+            "description": "List of tasks",
             "content": {
               "application/json": {
-                "schema": { "type": "object", "description": "Function execution result" }
-              },
-              "text/plain": {
-                "schema": { "type": "string", "description": "Plain text response" }
-              },
-              "text/html": { "schema": { "type": "string", "description": "HTML response" } },
-              "text/event-stream": {
                 "schema": {
-                  "type": "string",
-                  "description": "Server-sent events stream for generator functions"
+                  "type": "object",
+                  "properties": {
+                    "tasks": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Task" }
+                    }
+                  }
                 }
-              },
-              "application/octet-stream": {
-                "schema": { "type": "string", "format": "binary", "description": "Binary response" }
               }
             }
           },
-          "403": {
-            "description": "Function is disabled",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
-          },
-          "404": {
-            "description": "Function not found",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
             }
           },
           "500": {
-            "description": "Function execution failed",
+            "description": "Internal server error",
             "content": {
               "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new task",
+        "description": "Create a new task with the provided configuration",
+        "operationId": "createTask",
+        "tags": ["Admin - Tasks"],
+        "security": [{ "jwtAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/TaskInput" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "task": { "$ref": "#/components/schemas/Task" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      }
+    },
+    "/admin-api/tasks/{id}": {
+      "get": {
+        "summary": "Get task by ID",
+        "description": "Retrieve a specific task by its ID",
+        "operationId": "getTaskById",
+        "tags": ["Admin - Tasks"],
+        "security": [{ "jwtAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Task ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task details",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Task" } }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update task",
+        "description": "Update an existing task configuration",
+        "operationId": "updateTask",
+        "tags": ["Admin - Tasks"],
+        "security": [{ "jwtAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Task ID (UUID)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/TaskUpdateInput" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "task": { "$ref": "#/components/schemas/Task" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete task",
+        "description": "Delete an existing task and its associated function",
+        "operationId": "deleteTask",
+        "tags": ["Admin - Tasks"],
+        "security": [{ "jwtAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Task ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "message": { "type": "string" } } }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+            }
+          }
+        }
+      },
+      "/functions/v2/{name}": {
+        "post": {
+          "summary": "Execute function",
+          "description": "Execute a function with the provided input data. Supports both regular responses and streaming responses for generator functions.",
+          "operationId": "executeFunction",
+          "tags": ["Functions"],
+          "parameters": [
+            {
+              "name": "name",
+              "in": "path",
+              "required": true,
+              "schema": { "type": "string" },
+              "description": "Function name to execute"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Input data for the function execution"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Function executed successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "type": "object", "description": "Function execution result" }
+                },
+                "text/plain": {
+                  "schema": { "type": "string", "description": "Plain text response" }
+                },
+                "text/html": { "schema": { "type": "string", "description": "HTML response" } },
+                "text/event-stream": {
+                  "schema": {
+                    "type": "string",
+                    "description": "Server-sent events stream for generator functions"
+                  }
+                },
+                "application/octet-stream": {
+                  "schema": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Binary response"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "Function is disabled",
+              "content": {
+                "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+              }
+            },
+            "404": {
+              "description": "Function not found",
+              "content": {
+                "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+              }
+            },
+            "500": {
+              "description": "Function execution failed",
+              "content": {
+                "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+              }
             }
           }
         }
@@ -1211,6 +1463,111 @@
           }
         },
         "required": ["available_port_start", "available_port_end", "services"]
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Task unique identifier (UUID)" },
+          "name": { "type": "string", "description": "Task name" },
+          "function_name": { "type": "string", "description": "Associated function name" },
+          "retry_count": {
+            "type": "integer",
+            "description": "Number of retries on failure",
+            "minimum": 0
+          },
+          "retry_delay": {
+            "type": "integer",
+            "description": "Delay between retries in milliseconds",
+            "minimum": 0
+          },
+          "code": { "type": "string", "description": "JavaScript function code" },
+          "enabled": { "type": "boolean", "description": "Whether the task is enabled" },
+          "permissions": { "$ref": "#/components/schemas/ServicePermissions" },
+          "description": { "type": "string", "description": "Task description" },
+          "timeout": {
+            "type": "integer",
+            "description": "Function execution timeout in milliseconds"
+          },
+          "memory_limit": { "type": "integer", "description": "Memory limit in MB" },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "function_name",
+          "retry_count",
+          "retry_delay",
+          "code",
+          "enabled",
+          "permissions"
+        ]
+      },
+      "TaskInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Task name" },
+          "retry_count": {
+            "type": "integer",
+            "description": "Number of retries on failure",
+            "minimum": 0,
+            "default": 0
+          },
+          "retry_delay": {
+            "type": "integer",
+            "description": "Delay between retries in milliseconds",
+            "minimum": 0,
+            "default": 1000
+          },
+          "code": { "type": "string", "description": "JavaScript function code" },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the task is enabled",
+            "default": true
+          },
+          "permissions": { "$ref": "#/components/schemas/ServicePermissions" },
+          "description": { "type": "string", "description": "Task description" },
+          "timeout": {
+            "type": "integer",
+            "description": "Function execution timeout in milliseconds",
+            "default": 5000
+          },
+          "memory_limit": { "type": "integer", "description": "Memory limit in MB", "default": 128 }
+        },
+        "required": ["name", "code"]
+      },
+      "TaskUpdateInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Task name" },
+          "retry_count": {
+            "type": "integer",
+            "description": "Number of retries on failure",
+            "minimum": 0
+          },
+          "retry_delay": {
+            "type": "integer",
+            "description": "Delay between retries in milliseconds",
+            "minimum": 0
+          },
+          "code": { "type": "string", "description": "JavaScript function code" },
+          "enabled": { "type": "boolean", "description": "Whether the task is enabled" },
+          "permissions": { "$ref": "#/components/schemas/ServicePermissions" },
+          "description": { "type": "string", "description": "Task description" },
+          "timeout": {
+            "type": "integer",
+            "description": "Function execution timeout in milliseconds"
+          },
+          "memory_limit": { "type": "integer", "description": "Memory limit in MB" }
+        }
       }
     }
   },
@@ -1219,6 +1576,8 @@
     { "name": "Documentation", "description": "Service documentation endpoints" },
     { "name": "Service Proxy", "description": "Service request forwarding endpoints" },
     { "name": "Admin - Services", "description": "Admin endpoints for service management" },
+    { "name": "Admin - Functions", "description": "Admin endpoints for function management" },
+    { "name": "Admin - Tasks", "description": "Admin endpoints for task management" },
     {
       "name": "Admin - Configuration",
       "description": "Admin endpoints for configuration management"

@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2025-01-27
+
+### 🐛 Bug Fixes
+
+- **Fixed Timestamp Overflow** - Resolved negative timestamp issue in queue system
+  - Changed timestamp generation from milliseconds to seconds to prevent SQLite INTEGER overflow
+  - Fixed `emitTrace` function in `database/task_tables/queue.ts` to use `Math.floor(Date.now() / 1000)`
+- **Fixed Memory Leaks** - Resolved timer cleanup issues in task management
+  - Added proper AbortController signal propagation to `safeSleep` calls in task-manager.ts
+  - Prevents uncleaned timers in integration tests
+- **Fixed UUID Consistency** - Resolved data retrieval inconsistency in task system
+  - Fixed object merging order in task database operations to prioritize task properties
+  - Corrected `getTaskById`, `getAllTasks`, and `getTasksByName` functions in `database/tables/tasks.ts`
+
+### 🚀 New Features
+
+- **Task Management API** - Added comprehensive CRUD endpoints for task management
+  - New `/admin-api/tasks` endpoint for listing and creating tasks
+  - New `/admin-api/tasks/{id}` endpoint for retrieving, updating, and deleting specific tasks
+  - Full JWT authentication integration for admin task operations
+  - Support for task validation, execution status tracking, and error handling
+
+### 📚 Documentation
+
+- **Enhanced OpenAPI Specification** - Updated API documentation with task management endpoints
+  - Added complete schema definitions for Task, TaskInput, and TaskUpdateInput objects
+  - Documented all HTTP status codes and error responses
+  - Added "Admin - Tasks" tag for proper API organization
+
+### ✅ Testing
+
+- **Comprehensive Integration Tests** - Added thorough test coverage for task APIs
+  - Created `task_api_test.ts` with CRUD operation validation
+  - Added authentication, authorization, and error handling test cases
+  - Includes task execution and streaming function test scenarios
+- **Enhanced Admin API Tests** - Extended admin API test coverage
+  - Added validation tests for host-frontend functionality
+  - Improved test isolation with proper database cleanup
+
 ## [2.7.0] - 2025-08-11
 
 ### 🔧 Refactoring & Code Cleanup

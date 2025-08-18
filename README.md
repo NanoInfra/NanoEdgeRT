@@ -1,4 +1,4 @@
-# 🚀 NanoEdgeRT v2.7
+# 🚀 NanoEdgeRT v2.8.0
 
 [![CI](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml/badge.svg)](https://github.com/LemonHX/NanoEdgeRT/actions/workflows/ci.yml)
 [![Deno](https://img.shields.io/badge/Deno-000000?style=for-the-badge&logo=deno&logoColor=white)](https://deno.land/)
@@ -7,7 +7,7 @@
 
 **Next-Generation Edge Function Runtime** - A lightweight, high-performance platform built with Deno and SQLite for deploying and managing serverless functions at the edge with enterprise-grade security and developer experience.
 
-> 🏆 **Enterprise Ready**: Sub-millisecond response times, 5,000+ ops/sec throughput, JWT authentication, versioned APIs, serverless functions, frontend hosting, and auto-generated documentation!
+> 🏆 **Enterprise Ready**: Sub-millisecond response times, 5,000+ ops/sec throughput, JWT authentication, versioned APIs, serverless functions, task management, frontend hosting, and auto-generated documentation!
 
 ## ✨ Key Features
 
@@ -15,6 +15,8 @@
 
 - **Service API**: `/api/v2/{serviceName}/*` - Public service endpoints
 - **Function API**: `/functions/v2/{functionName}` - Serverless function execution
+- **Task API**: `/admin-api/v2/tasks/*` - Task management and orchestration
+- **Queue API**: `/queue/v2/*` - Task queue and trace subscription
 - **Admin API**: `/admin-api/v2/*` - JWT-protected administrative operations
 - **Documentation API**: `/api/docs/{serviceName}` - Service-specific documentation
 
@@ -57,7 +59,33 @@
 - **Real-time Streaming** - Support for both regular and streaming function responses
 - **Error Handling** - Comprehensive error handling and timeout protection
 
-## 🏗️ Architecture Overview
+### 📋 Task Management
+
+- **Task Orchestration** - Create and manage complex task workflows
+- **Queue System** - Background task execution with retry logic and trace functionality
+- **UUID-based Identification** - Consistent task tracking with unique identifiers
+- **Retry Management** - Configurable retry counts and delays for failed tasks
+- **Real-time Tracing** - Subscribe to task execution traces and status updates
+- **Admin API Integration** - Full CRUD operations via JWT-protected endpoints
+
+## � What's New in v2.8.0
+
+### 🔧 Critical Bug Fixes
+- **Fixed Timestamp Overflow** - Resolved negative timestamp issue (`ts: -1477412146`) by converting milliseconds to seconds for SQLite compatibility
+- **Memory Leak Prevention** - Fixed timer cleanup issues in task management with proper AbortController signal propagation
+- **UUID Consistency** - Corrected data retrieval inconsistency in task system by fixing object merging precedence
+
+### 🚀 New Features
+- **Task Management System** - Complete task orchestration with CRUD operations, retry logic, and queue execution
+- **Queue API** - Background task processing with real-time trace subscription and status monitoring
+- **Enhanced API Documentation** - Updated OpenAPI specification with comprehensive task management endpoint documentation
+
+### ✅ Quality Improvements
+- **Comprehensive Testing** - Added 15+ new integration tests covering task API operations, validation, and error handling
+- **Enhanced Admin API Tests** - Extended test coverage for host-frontend functionality and authorization scenarios
+- **117 Passing Tests** - Complete test suite coverage ensuring system reliability and performance
+
+## �🏗️ Architecture Overview
 
 ```mermaid
 graph TB
@@ -66,6 +94,7 @@ graph TB
     Auth -->|Admin API| JWT[JWT Validation]
     Auth -->|Service API| ServiceRouter[Service Router]
     Auth -->|Function API| FunctionRouter[Function Router]
+    Auth -->|Queue API| QueueRouter[Queue Router]
     Auth -->|Public| PublicRouter[Public Routes]
     JWT -->|Valid| AdminRouter[Admin Router]
     JWT -->|Invalid| Error[401 Unauthorized]
@@ -76,14 +105,21 @@ graph TB
     
     AdminRouter --> AdminAPI["/admin-api/v2/*"]
     AdminRouter --> FunctionAdmin["/admin-api/v2/functions/*"]
+    AdminRouter --> TaskAdmin["/admin-api/v2/tasks/*"]
     ServiceRouter --> ServiceAPI["/api/v2/*"]
     ServiceRouter --> ServiceDocs["/api/docs/*"]
     FunctionRouter --> FunctionAPI["/functions/v2/*"]
+    QueueRouter --> QueueAPI["/queue/v2/*"]
     
     AdminAPI --> Database[(SQLite Database)]
+    TaskAdmin --> TaskManager[Task Manager]
+    QueueAPI --> TaskQueue[Task Queue]
     ServiceAPI --> ServiceManager[Service Manager]
     FunctionAPI --> FunctionManager[Function Manager]
     ServiceDocs --> SwaggerUI[Swagger UI]
+    
+    TaskManager --> TaskDatabase[(Task Database)]
+    TaskQueue --> QueueDatabase[(Queue Database)]
     
     ServiceManager --> Worker1[Service Worker :8001]
     ServiceManager --> Worker2[Service Worker :8002]
@@ -98,6 +134,9 @@ graph TB
         Database --> Functions[Functions Table]
         Database --> Config[Config Table]
         Database --> Ports[Ports Table]
+        TaskDatabase --> Tasks[Tasks Table]
+        QueueDatabase --> Queue[Queue Table]
+        QueueDatabase --> Traces[Traces Table]
     end
     
     Worker1 --> ServiceInstance1[hello service]
@@ -195,6 +234,19 @@ export JWT_TOKEN="your-admin-jwt-token"
 | `/admin-api/v2/functions/{name}` | PUT    | Update function       | See [Function Updates](#-function-updates)                                                                             |
 | `/admin-api/v2/functions/{name}` | DELETE | Delete function       | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/functions/my-function`        |
 | `/functions/v2/{name}`           | POST   | Execute function      | `curl -X POST -H "Content-Type: application/json" -d '{"key":"value"}' http://localhost:8000/functions/v2/my-function` |
+
+#### Task Management
+
+| Endpoint                      | Method | Description              | Example                                                                                                           |
+| ----------------------------- | ------ | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `/admin-api/v2/tasks`         | GET    | List all tasks           | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks`                             |
+| `/admin-api/v2/tasks`         | POST   | Create new task          | See [Task Creation](#-task-creation)                                                                              |
+| `/admin-api/v2/tasks/{id}`    | GET    | Get specific task        | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks/task-uuid`                   |
+| `/admin-api/v2/tasks/{id}`    | PUT    | Update task              | See [Task Updates](#-task-updates)                                                                                |
+| `/admin-api/v2/tasks/{id}`    | DELETE | Delete task              | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks/task-uuid`         |
+| `/admin-api/v2/tasks?name=X`  | GET    | Filter tasks by name     | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks?name=my-task`                |
+| `/queue/v2/enqueue`           | POST   | Enqueue task for execution | `curl -X POST -H "Content-Type: application/json" -d '{"taskId":"task-uuid","params":{}}' http://localhost:8000/queue/v2/enqueue` |
+| `/queue/v2/subscribe`         | POST   | Subscribe to task traces | `curl -X POST -H "Content-Type: application/json" -d '{"queueId":"queue-uuid"}' http://localhost:8000/queue/v2/subscribe` |
 
 #### Configuration Management
 
@@ -400,6 +452,73 @@ data: "Processing data..."
 data: "Almost done..."
 
 data: [DONE]"Completed!"
+```
+
+## 📋 Task Management
+
+### 🆕 Task Creation
+
+Create tasks that combine function code with retry logic and orchestration capabilities:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "data-processing-task",
+    "code": "export default function(input) {\n  return {\n    processed: true,\n    result: input.data * 2,\n    timestamp: Date.now()\n  };\n}",
+    "retry_count": 3,
+    "retry_delay": 5000,
+    "permissions": {
+      "read": [],
+      "write": [],
+      "env": [],
+      "run": []
+    },
+    "description": "Process data with retry logic"
+  }' \
+  http://localhost:8000/admin-api/v2/tasks
+```
+
+### 🔄 Task Updates
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "updated-task",
+    "retry_count": 5,
+    "retry_delay": 3000,
+    "description": "Updated task with new retry settings"
+  }' \
+  http://localhost:8000/admin-api/v2/tasks/your-task-uuid
+```
+
+### 🚀 Task Execution
+
+Execute tasks through the queue system:
+
+```bash
+# Enqueue task for execution
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "your-task-uuid",
+    "params": {
+      "data": 42,
+      "user": "alice"
+    }
+  }' \
+  http://localhost:8000/queue/v2/enqueue
+
+# Subscribe to task execution traces
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queueId": "your-queue-uuid"
+  }' \
+  http://localhost:8000/queue/v2/subscribe
 ```
 
 ## 🌐 Frontend Hosting Deployment

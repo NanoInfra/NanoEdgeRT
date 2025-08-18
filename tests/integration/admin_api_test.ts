@@ -400,3 +400,126 @@ Deno.serve(handler)
     abortController.abort();
   }
 });
+
+Deno.test("Integration: Admin API - host-frontend validation", async () => {
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [app, _port, abortController, _serviceManagerState] = await createNanoEdgeRT(dbContext);
+
+  try {
+    const mockToken = await createJWT({
+      sub: "user123",
+      role: "admin",
+      exp: Math.floor(Date.now() / 1000) + 60 * 5,
+    });
+
+    // Test missing required fields
+    const missingFieldsResponse = await app.fetch(
+      new Request("http://localhost:8000/admin-api/v2/host-frontend", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${mockToken}`,
+        },
+        body: new FormData(),
+      }),
+    );
+    assertEquals(missingFieldsResponse.status, 400);
+    const missingFieldsResult = await missingFieldsResponse.json();
+    assertEquals(
+      missingFieldsResult.error,
+      "Missing required fields: server (JS file), static (ZIP file), and serviceName",
+    );
+
+    // Test invalid server file type
+    const formData = new FormData();
+    formData.append(
+      "server",
+      new File(["console.log('test')"], "test.txt", { type: "text/plain" }),
+    );
+    formData.append("static", new File([], "static.zip", { type: "application/zip" }));
+    formData.append("serviceName", "test-service");
+
+    const invalidServerResponse = await app.fetch(
+      new Request("http://localhost:8000/admin-api/v2/host-frontend", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${mockToken}`,
+        },
+        body: formData,
+      }),
+    );
+    assertEquals(invalidServerResponse.status, 400);
+    const invalidServerResult = await invalidServerResponse.json();
+    assertEquals(invalidServerResult.error, "Server file must be a .js file");
+
+    // Test invalid static file type
+    const formData2 = new FormData();
+    formData2.append(
+      "server",
+      new File(["console.log('test')"], "test.js", { type: "application/javascript" }),
+    );
+    formData2.append("static", new File([], "static.txt", { type: "text/plain" }));
+    formData2.append("serviceName", "test-service");
+
+    const invalidStaticResponse = await app.fetch(
+      new Request("http://localhost:8000/admin-api/v2/host-frontend", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${mockToken}`,
+        },
+        body: formData2,
+      }),
+    );
+    assertEquals(invalidStaticResponse.status, 400);
+    const invalidStaticResult = await invalidStaticResponse.json();
+    assertEquals(invalidStaticResult.error, "Static file must be a .zip file");
+  } finally {
+    abortController.abort();
+  }
+});
+
+Deno.test("Integration: Admin API - unauthorized access", async () => {
+  const db = await createIsolatedDb();
+  const dbContext = await createDatabaseContext(db);
+  const [app, _port, abortController, _serviceManagerState] = await createNanoEdgeRT(dbContext);
+
+  try {
+    // Test access without token
+    const noTokenResponse = await app.fetch(
+      new Request("http://localhost:8000/admin-api/v2/host-frontend", {
+        method: "POST",
+      }),
+    );
+    assertEquals(noTokenResponse.status, 401);
+
+    // Test access with invalid token
+    const invalidTokenResponse = await app.fetch(
+      new Request("http://localhost:8000/admin-api/v2/host-frontend", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer invalid.token.here",
+        },
+      }),
+    );
+    assertEquals(invalidTokenResponse.status, 401);
+
+    // Test access with expired token
+    const expiredToken = await createJWT({
+      sub: "user123",
+      role: "admin",
+      exp: Math.floor(Date.now() / 1000) - 60, // Expired 1 minute ago
+    });
+
+    const expiredTokenResponse = await app.fetch(
+      new Request("http://localhost:8000/admin-api/v2/host-frontend", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${expiredToken}`,
+        },
+      }),
+    );
+    assertEquals(expiredTokenResponse.status, 401);
+  } finally {
+    abortController.abort();
+  }
+});

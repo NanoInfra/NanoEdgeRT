@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { jwt, sign, verify } from "hono/jwt";
-import { setupAPIRoutes } from "../../database/api/api.service.ts";
+import { databaseMiddleware, setupAPIRoutes } from "../../database/api/api.service.ts";
 import { setupFunctionAPIRoutes } from "../../database/api/api.function.ts";
 import { Context } from "hono";
 import JSZip from "jszip";
 import { DatabaseContext } from "../../database/config.ts";
 import { createService } from "../../database/tables/services.ts";
+import { setupTaskAPIRoutes } from "../../database/api/api.task.ts";
 
 // Extend Hono's Context to include our database context
 export interface JWTPayload {
@@ -144,12 +145,16 @@ export function setupAdminAPIRoutes(
       // algorithms: ["HS256"],
     }),
   );
+  // Apply database middleware to all API routes
+  app.use("*", databaseMiddleware(dbContext));
 
-  setupAPIRoutes(app, dbContext);
-  setupFunctionAPIRoutes(app, dbContext);
+  app.post("/host-frontend", hostFrontendHandler);
+
+  setupAPIRoutes(app);
+  setupFunctionAPIRoutes(app);
+  setupTaskAPIRoutes(app);
 
   // Frontend hosting API
-  app.post("/host-frontend", hostFrontendHandler);
 
   return app;
 }

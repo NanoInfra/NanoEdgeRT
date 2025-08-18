@@ -25,10 +25,7 @@ export function databaseMiddleware(dbContext: DatabaseContext) {
 }
 
 // Setup all API routes
-export function setupAPIRoutes(app: Hono, dbContext: DatabaseContext) {
-  // Apply database middleware to all API routes
-  app.use("*", databaseMiddleware(dbContext));
-
+export function setupAPIRoutes(app: Hono) {
   // Services routes
   app.get("/services", getAllServicesHandler);
   app.get("/services/:name", getServiceHandler);

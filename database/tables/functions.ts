@@ -1,5 +1,5 @@
 import { DatabaseContext } from "../config.ts";
-import { ServiceConfig, ServicePermissions } from "./services.ts";
+import { ServicePermissions } from "./services.ts";
 import { Kysely } from "kysely";
 import { Database } from "./index.ts";
 
@@ -17,8 +17,8 @@ export interface FunctionTable {
 export interface FunctionConfig {
   name: string;
   code: string;
-  enabled: boolean;
   permissions: ServicePermissions;
+  enabled?: boolean;
   description?: string;
 }
 
