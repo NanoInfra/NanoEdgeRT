@@ -373,6 +373,7 @@
     "https://deno.land/x/djwt@v3.0.2/mod.ts": "962d8f2c4d6a4db111f45d777b152356aec31ba7db0ca664601175a422629857",
     "https://deno.land/x/djwt@v3.0.2/signature.ts": "16238fbf558267c85dd6c0178045f006c8b914a7301db87149f3318326569272",
     "https://deno.land/x/djwt@v3.0.2/util.ts": "5cb264d2125c553678e11446bcfa0494025d120e3f59d0a3ab38f6800def697d",
+    "https://deno.land/x/opencv@v4.3.0-10/mod.ts": "cf44a0ab85c3a1faceada5151276e7981a40d50c7b29ab977a1bd29b87ff7cf9",
     "https://esm.sh/@asteasolutions/zod-to-openapi@7.3.4/denonext/zod-to-openapi.mjs": "d62bd5f6d091f23b9bace0d921c2bf29cb6dc20a3f875ef8b63b9bdaa841410e",
     "https://esm.sh/@asteasolutions/zod-to-openapi@7.3.4?target=denonext": "5da9b1fb07512909556c1d37092bd9c9824807527096682ed4cf5f8780a57664",
     "https://esm.sh/@asteasolutions/zod-to-openapi@8.0.0/X-ZHpvZEAzLjIzLjg/denonext/zod-to-openapi.mjs": "27b69b4cab99d1fa1104a5019ab0809eed10185583da3c1a38ba37f6bbb82519",
@@ -549,7 +550,10 @@
     "https://esm.sh/zod@4.0.10/denonext/v4/core.mjs": "3a73fd9dbf78e7be2883f4b41687cc1df41ba4204f3dd0844453442d65916b08",
     "https://esm.sh/zod@4.0.10/denonext/v4/locales.mjs": "5f5134371e0fc080b5d3d07a99c236bcc175527a54ccd8d021150c7e80276ced",
     "https://esm.sh/zod@4.0.10/denonext/zod.mjs": "8f6c329da15ad4a84e6a850396c07bcae0db895b28de1b5f9320263fc8740a72",
-    "https://esm.sh/zod@4.0.10?target=denonext": "bc008a6a52663364943e45d029fbfda0c092f5679b7c9b4d15bc8ed1b4f0ce54"
+    "https://esm.sh/zod@4.0.10?target=denonext": "bc008a6a52663364943e45d029fbfda0c092f5679b7c9b4d15bc8ed1b4f0ce54",
+    "https://unpkg.com/opencv-wasm@4.3.0-10/opencv-bin.js": "6d93f5239b0e3924993598a98b63d60f498f2ca4abadd741e44854a985bb0431",
+    "https://unpkg.com/opencv-wasm@4.3.0-10/opencv-deno.js": "36bbbad68a721376bd84c5aa2dede5be2f35e5d0f3061ed92e633588031110a5",
+    "https://unpkg.com/opencv-wasm@4.3.0-10/types/opencv.ts": "cb3ba6ded5849eda9aee689a334483b9bb71cdd63aa8a69d23bf2926441e0f3d"
   },
   "workspace": {
     "dependencies": [

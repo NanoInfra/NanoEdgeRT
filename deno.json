@@ -1,6 +1,6 @@
 {
   "name": "NanoEdgeRT",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "A lightweight, high-performance edge function runtime built with Deno",
   "imports": {
     "hono": "npm:hono@^4.8.9",

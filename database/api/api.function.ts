@@ -1,6 +1,5 @@
 import type { Context } from "hono";
 import type { Hono } from "hono";
-import { DatabaseContext } from "../config.ts";
 import {
   createFunction,
   deleteFunction,
@@ -10,7 +9,7 @@ import {
 } from "../tables/functions.ts";
 
 // Setup function API routes
-export function setupFunctionAPIRoutes(app: Hono, _dbContext: DatabaseContext) {
+export function setupFunctionAPIRoutes(app: Hono) {
   // Functions routes
   app.get("/functions", getAllFunctionsHandler);
   app.get("/functions/:name", getFunctionHandler);

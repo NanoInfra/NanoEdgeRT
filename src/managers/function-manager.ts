@@ -1,53 +1,16 @@
 import { DatabaseContext } from "../../database/config.ts";
-import { FunctionConfig } from "../../database/tables/functions.ts";
-
-export interface FunctionManagerState {
-  functions: Map<string, FunctionConfig>;
-  dbContext: DatabaseContext;
-}
-
-export function createFunctionManagerState(
-  dbContext: DatabaseContext,
-): FunctionManagerState {
-  const functions = new Map<string, FunctionConfig>();
-  return {
-    functions,
-    dbContext,
-  };
-}
-
-export function getFunction(
-  state: FunctionManagerState,
-  functionName: string,
-): FunctionConfig | undefined {
-  return state.functions.get(functionName);
-}
-
-export function getAllFunctions(
-  state: FunctionManagerState,
-): object[] {
-  return Array.from(state.functions.values()).map((f) => (
-    {
-      ...f,
-      code: undefined, // Do not expose code in API
-    }
-  ));
-}
+import { getFunction } from "../../database/tables/functions.ts";
 
 export async function execFunction(
-  state: FunctionManagerState,
-  functionConfig: FunctionConfig,
+  context: DatabaseContext,
+  name: string,
   params: object,
 ): Promise<Response> {
   try {
-    // Check if function already has an allocated port
-    state.functions.set(functionConfig.name, functionConfig);
-
-    // Functions must have code from database - no file-based functions
-    if (!functionConfig.code) {
-      throw new Error("Function code is required - file-based functions are not supported");
+    const functionConfig = await getFunction(context, name);
+    if (!functionConfig) {
+      return new Response(`Function ${name} not found`, { status: 404 });
     }
-
     const functionCode = functionConfig.code;
     const staticDir = new URL(`../../static/${functionConfig.name}/`, import.meta.url);
     const handlerCode = `

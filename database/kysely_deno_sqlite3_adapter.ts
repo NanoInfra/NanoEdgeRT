@@ -13,6 +13,7 @@ import {
 } from "kysely";
 
 import { Database as Sqlite } from "jsr:@db/sqlite";
+import { safeSleep } from "../src/utils.ts";
 
 export class DenoSqliteDialect implements Dialect {
   readonly #config: Sqlite;
@@ -64,7 +65,7 @@ class SqliteDriver implements Driver {
 
   async acquireConnection(): Promise<DatabaseConnection> {
     while (this.#locked) {
-      await new Promise((resolve) => setTimeout(resolve, 1));
+      await safeSleep(1);
     }
     this.#locked = true;
     return this;

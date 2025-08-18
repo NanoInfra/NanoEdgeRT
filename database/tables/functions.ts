@@ -1,5 +1,5 @@
 import { DatabaseContext } from "../config.ts";
-import { ServiceConfig, ServicePermissions } from "./services.ts";
+import { ServicePermissions } from "./services.ts";
 import { Kysely } from "kysely";
 import { Database } from "./index.ts";
 
@@ -17,18 +17,9 @@ export interface FunctionTable {
 export interface FunctionConfig {
   name: string;
   code: string;
-  enabled: boolean;
   permissions: ServicePermissions;
+  enabled?: boolean;
   description?: string;
-}
-
-export interface Config {
-  available_port_start: number;
-  available_port_end: number;
-  services: ServiceConfig[];
-  jwt_secret?: string;
-  main_port?: number;
-  function_execution_timeout?: number; // Timeout in milliseconds for function execution
 }
 
 // Function management operations
