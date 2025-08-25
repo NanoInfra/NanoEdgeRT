@@ -16,7 +16,7 @@
     "raw-imports"
   ],
   "tasks": {
-    "start": "deno run --allow-all --unstable-worker-options src/nanoedge.ts",
+    "cli": "deno run --allow-all --unstable-worker-options cli/mod.ts",
     "test": "deno test --allow-all --unstable-worker-options tests/",
     "test:unit": "deno test --allow-all --unstable-worker-options tests/unit/",
     "test:integration": "deno test --allow-all --unstable-worker-options tests/integration/",
