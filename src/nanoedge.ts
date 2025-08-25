@@ -104,28 +104,7 @@ export async function startNanoEdgeRT(
   return ac;
 }
 
-function stopNanoEdgeRT(ac: AbortController): void {
+export function stopNanoEdgeRT(ac: AbortController): void {
   console.log("🛑 Stopping NanoEdgeRT...");
   ac.abort();
-}
-
-if (import.meta.main) {
-  const dbPath = Deno.args[0] || ":memory:";
-
-  Deno.addSignalListener("SIGINT", () => {
-    console.log("\n🛑 SIGINT received, initiating graceful shutdown...");
-    stopNanoEdgeRT(ac);
-  });
-
-  // if is not windows
-  if (Deno.build.os !== "windows") {
-    Deno.addSignalListener("SIGTERM", () => {
-      console.log("\n🛑 SIGTERM received, initiating graceful shutdown...");
-      stopNanoEdgeRT(ac);
-    });
-  }
-
-  const ac = await startNanoEdgeRT(dbPath);
-  console.log("NanoEdgeRT server is running. Press Ctrl+C to stop.");
-  await new Promise((resolve) => ac.signal.addEventListener("abort", resolve));
 }
