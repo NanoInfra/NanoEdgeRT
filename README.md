@@ -71,21 +71,24 @@
 ## � What's New in v2.8.0
 
 ### 🔧 Critical Bug Fixes
+
 - **Fixed Timestamp Overflow** - Resolved negative timestamp issue (`ts: -1477412146`) by converting milliseconds to seconds for SQLite compatibility
 - **Memory Leak Prevention** - Fixed timer cleanup issues in task management with proper AbortController signal propagation
 - **UUID Consistency** - Corrected data retrieval inconsistency in task system by fixing object merging precedence
 
 ### 🚀 New Features
+
 - **Task Management System** - Complete task orchestration with CRUD operations, retry logic, and queue execution
 - **Queue API** - Background task processing with real-time trace subscription and status monitoring
 - **Enhanced API Documentation** - Updated OpenAPI specification with comprehensive task management endpoint documentation
 
 ### ✅ Quality Improvements
+
 - **Comprehensive Testing** - Added 15+ new integration tests covering task API operations, validation, and error handling
 - **Enhanced Admin API Tests** - Extended test coverage for host-frontend functionality and authorization scenarios
 - **117 Passing Tests** - Complete test suite coverage ensuring system reliability and performance
 
-## �🏗️ Architecture Overview
+## 🏗️ Architecture Overview
 
 ```mermaid
 graph TB
@@ -164,7 +167,7 @@ graph TB
 
 2. **Start the server:**
    ```bash
-   deno task start
+   deno task cli start
    ```
 
    The server will automatically:
@@ -237,16 +240,16 @@ export JWT_TOKEN="your-admin-jwt-token"
 
 #### Task Management
 
-| Endpoint                      | Method | Description              | Example                                                                                                           |
-| ----------------------------- | ------ | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `/admin-api/v2/tasks`         | GET    | List all tasks           | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks`                             |
-| `/admin-api/v2/tasks`         | POST   | Create new task          | See [Task Creation](#-task-creation)                                                                              |
-| `/admin-api/v2/tasks/{id}`    | GET    | Get specific task        | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks/task-uuid`                   |
-| `/admin-api/v2/tasks/{id}`    | PUT    | Update task              | See [Task Updates](#-task-updates)                                                                                |
-| `/admin-api/v2/tasks/{id}`    | DELETE | Delete task              | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks/task-uuid`         |
-| `/admin-api/v2/tasks?name=X`  | GET    | Filter tasks by name     | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks?name=my-task`                |
-| `/queue/v2/enqueue`           | POST   | Enqueue task for execution | `curl -X POST -H "Content-Type: application/json" -d '{"taskId":"task-uuid","params":{}}' http://localhost:8000/queue/v2/enqueue` |
-| `/queue/v2/subscribe`         | POST   | Subscribe to task traces | `curl -X POST -H "Content-Type: application/json" -d '{"queueId":"queue-uuid"}' http://localhost:8000/queue/v2/subscribe` |
+| Endpoint                     | Method | Description                | Example                                                                                                                           |
+| ---------------------------- | ------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `/admin-api/v2/tasks`        | GET    | List all tasks             | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks`                                             |
+| `/admin-api/v2/tasks`        | POST   | Create new task            | See [Task Creation](#-task-creation)                                                                                              |
+| `/admin-api/v2/tasks/{id}`   | GET    | Get specific task          | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks/task-uuid`                                   |
+| `/admin-api/v2/tasks/{id}`   | PUT    | Update task                | See [Task Updates](#-task-updates)                                                                                                |
+| `/admin-api/v2/tasks/{id}`   | DELETE | Delete task                | `curl -X DELETE -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks/task-uuid`                         |
+| `/admin-api/v2/tasks?name=X` | GET    | Filter tasks by name       | `curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8000/admin-api/v2/tasks?name=my-task`                                |
+| `/queue/v2/enqueue`          | POST   | Enqueue task for execution | `curl -X POST -H "Content-Type: application/json" -d '{"taskId":"task-uuid","params":{}}' http://localhost:8000/queue/v2/enqueue` |
+| `/queue/v2/subscribe`        | POST   | Subscribe to task traces   | `curl -X POST -H "Content-Type: application/json" -d '{"queueId":"queue-uuid"}' http://localhost:8000/queue/v2/subscribe`         |
 
 #### Configuration Management
 
@@ -815,7 +818,7 @@ deno test --coverage=coverage --allow-all
 
 ```bash
 # Start development server
-deno task start
+deno task cli start
 
 # Format code
 deno task fmt
