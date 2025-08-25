@@ -4,7 +4,7 @@ import { Table } from "jsr:@cliffy/table@^1.0.0-rc.8";
 import { renderLogo } from "./mod.ts";
 
 export const statusCommand = new Command()
-  .description("🩺 Check server health status")
+  .description(colors.brightCyan("🩺 Check server health status"))
   // deno-lint-ignore no-explicit-any
   .action(async (options: any) => {
     const baseUrl = `http://${options.host}:${options.port}`;
