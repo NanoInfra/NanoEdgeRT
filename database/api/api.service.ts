@@ -1,5 +1,5 @@
 import type { Context, Next } from "hono";
-import type { Hono } from "hono";
+import { Hono } from "hono";
 import { DatabaseContext, updateConfig } from "../config.ts";
 import {
   createService,
@@ -25,18 +25,21 @@ export function databaseMiddleware(dbContext: DatabaseContext) {
 }
 
 // Setup all API routes
-export function setupAPIRoutes(app: Hono) {
-  // Services routes
-  app.get("/services", getAllServicesHandler);
-  app.get("/services/:name", getServiceHandler);
-  app.post("/services", createServiceHandler);
-  app.put("/services/:name", updateServiceHandler);
-  app.delete("/services/:name", deleteServiceHandler);
-
-  // Config routes
+export function setupAPIRoutes() {
+  const app = new Hono();
+  // Config routes (more specific, should come first)
   app.get("/config", getAllConfigHandler);
   app.get("/config/:key", getConfigHandler);
   app.put("/config/:key", updateConfigHandler);
+
+  // Services routes (parameterized routes come after specific routes)
+  app.get("/", getAllServicesHandler);
+  app.post("/", createServiceHandler);
+  app.get("/:name", getServiceHandler);
+  app.put("/:name", updateServiceHandler);
+  app.delete("/:name", deleteServiceHandler);
+
+  return app;
 }
 
 // Services handlers
@@ -260,3 +263,4 @@ async function updateConfigHandler(c: Context): Promise<Response> {
     );
   }
 }
+export type AppType = ReturnType<typeof setupAPIRoutes>;

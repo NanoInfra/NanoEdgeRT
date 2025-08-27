@@ -10,7 +10,10 @@ export function setupFunctionAPIRoutes(dbContext: DatabaseContext) {
   const app = new Hono();
   // Function execution route
   app.use("*", databaseMiddleware(dbContext));
-  app.post(":name", executeFunctionHandler);
+  app.post(
+    ":name",
+    executeFunctionHandler,
+  );
   return app;
 }
 
@@ -42,3 +45,6 @@ async function executeFunctionHandler(c: Context): Promise<Response> {
     }, 500);
   }
 }
+
+// AppType export for hono-docs
+export type AppType = ReturnType<typeof setupFunctionAPIRoutes>;

@@ -60,3 +60,6 @@ async function subscribeToTraceHandler(c: Context): Promise<Response> {
     },
   });
 }
+
+// AppType export for hono-docs
+export type AppType = ReturnType<typeof setupQueueAPIRoutes>;

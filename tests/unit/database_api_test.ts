@@ -19,7 +19,7 @@ Deno.test("setupAPIRoutes - should setup all routes", async () => {
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   // Test that the app has routes set up
   assertExists(app);
@@ -31,9 +31,9 @@ Deno.test("getAllServicesHandler - should return services", async () => {
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
-  const response = await app.fetch(new Request("http://localhost/services"));
+  const response = await app.fetch(new Request("http://localhost/"));
   assertEquals(response.status, 200);
 
   const data = await response.json();
@@ -47,9 +47,9 @@ Deno.test("getServiceHandler - should return 404 for nonexistent service", async
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
-  const response = await app.fetch(new Request("http://localhost/services/nonexistent"));
+  const response = await app.fetch(new Request("http://localhost/nonexistent"));
   assertEquals(response.status, 404);
 
   const data = await response.json();
@@ -76,9 +76,9 @@ Deno.test("getServiceHandler - should return service when it exists", async () =
     .execute();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
-  const response = await app.fetch(new Request("http://localhost/services/test-service"));
+  const response = await app.fetch(new Request("http://localhost/test-service"));
   assertEquals(response.status, 200);
 
   const service = await response.json();
@@ -92,7 +92,7 @@ Deno.test("createServiceHandler - should create new service", async () => {
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const serviceData = {
     name: "new-service",
@@ -103,7 +103,7 @@ Deno.test("createServiceHandler - should create new service", async () => {
   };
 
   const response = await app.fetch(
-    new Request("http://localhost/services", {
+    new Request("http://localhost", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(serviceData),
@@ -123,7 +123,7 @@ Deno.test("createServiceHandler - should require name and code", async () => {
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const incompleteData = {
     name: "incomplete-service",
@@ -131,7 +131,7 @@ Deno.test("createServiceHandler - should require name and code", async () => {
   };
 
   const response = await app.fetch(
-    new Request("http://localhost/services", {
+    new Request("http://localhost", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(incompleteData),
@@ -164,7 +164,7 @@ Deno.test("updateServiceHandler - should update existing service", async () => {
     .execute();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const updateData = {
     code: "updated code",
@@ -172,7 +172,7 @@ Deno.test("updateServiceHandler - should update existing service", async () => {
   };
 
   const response = await app.fetch(
-    new Request("http://localhost/services/test-service", {
+    new Request("http://localhost/test-service", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updateData),
@@ -207,10 +207,10 @@ Deno.test("deleteServiceHandler - should delete existing service", async () => {
     .execute();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const response = await app.fetch(
-    new Request("http://localhost/services/test-service", {
+    new Request("http://localhost/test-service", {
       method: "DELETE",
     }),
   );
@@ -227,7 +227,7 @@ Deno.test("getAllConfigHandler - should return all configuration", async () => {
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const response = await app.fetch(new Request("http://localhost/config"));
   assertEquals(response.status, 200);
@@ -245,7 +245,7 @@ Deno.test("getConfigHandler - should return specific config value", async () => 
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const response = await app.fetch(new Request("http://localhost/config/main_port"));
   assertEquals(response.status, 200);
@@ -262,7 +262,7 @@ Deno.test("getConfigHandler - should return 404 for nonexistent config key", asy
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const response = await app.fetch(new Request("http://localhost/config/nonexistent_key"));
   assertEquals(response.status, 404);
@@ -276,7 +276,7 @@ Deno.test("updateConfigHandler - should update config value", async () => {
   const dbContext = await createDatabaseContext(db);
   const app = new Hono();
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const updateData = { value: "9000" };
 
@@ -300,7 +300,7 @@ Deno.test("updateConfigHandler - should require value", async () => {
   const app = new Hono();
 
   app.use("*", databaseMiddleware(dbContext));
-  setupAPIRoutes(app);
+  app.route("", setupAPIRoutes());
 
   const incompleteData = {}; // Missing value
 

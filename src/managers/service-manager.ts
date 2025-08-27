@@ -146,7 +146,7 @@ try {
     console.log("Service started successfully");
   }
 } catch {
-    throw new Error("Service failed to initialize");
+  self.postMessage({ type: "error", error: "Failed to load service module" });
 }
 
 self.onmessage = async (event) => {

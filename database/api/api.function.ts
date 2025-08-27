@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { Hono } from "hono";
+import { Hono } from "hono";
 import {
   createFunction,
   deleteFunction,
@@ -9,13 +9,16 @@ import {
 } from "../tables/functions.ts";
 
 // Setup function API routes
-export function setupFunctionAPIRoutes(app: Hono) {
+export function setupFunctionAPIRoutes() {
+  const app = new Hono();
   // Functions routes
-  app.get("/functions", getAllFunctionsHandler);
-  app.get("/functions/:name", getFunctionHandler);
-  app.post("/functions", createFunctionHandler);
-  app.put("/functions/:name", updateFunctionHandler);
-  app.delete("/functions/:name", deleteFunctionHandler);
+  app.get("/", getAllFunctionsHandler);
+  app.post("/", createFunctionHandler);
+  app.get("/:name", getFunctionHandler);
+  app.put("/:name", updateFunctionHandler);
+  app.delete("/:name", deleteFunctionHandler);
+
+  return app;
 }
 
 // Function handlers
@@ -141,3 +144,5 @@ async function deleteFunctionHandler(c: Context): Promise<Response> {
     );
   }
 }
+
+export type AppType = ReturnType<typeof setupFunctionAPIRoutes>;

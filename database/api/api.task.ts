@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { Hono } from "hono";
+import { Hono } from "hono";
 import {
   createTask,
   deleteTask,
@@ -23,13 +23,16 @@ export function queueBaseMiddleware(queueBase: Kysely<QueueBase>) {
 }
 
 // Setup task API routes
-export function setupTaskAPIRoutes(app: Hono) {
+export function setupTaskAPIRoutes() {
+  const app = new Hono();
+
   // Tasks routes
-  app.get("/tasks", getAllTasksHandler);
-  app.get("/tasks/:id", getTaskHandler);
-  app.post("/tasks", createTaskHandler);
-  app.put("/tasks/:id", updateTaskHandler);
-  app.delete("/tasks/:id", deleteTaskHandler);
+  app.get("/", getAllTasksHandler);
+  app.post("/", createTaskHandler);
+  app.get("/:id", getTaskHandler);
+  app.put("/:id", updateTaskHandler);
+  app.delete("/:id", deleteTaskHandler);
+  return app;
 }
 
 // Task handlers
@@ -193,3 +196,5 @@ async function deleteTaskHandler(c: Context): Promise<Response> {
     );
   }
 }
+
+export type AppType = ReturnType<typeof setupTaskAPIRoutes>;

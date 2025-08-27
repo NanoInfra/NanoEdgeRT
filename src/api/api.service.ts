@@ -136,3 +136,5 @@ async function forwardToService(
     );
   }
 }
+
+export type AppType = ReturnType<typeof setupApiRoutes>;

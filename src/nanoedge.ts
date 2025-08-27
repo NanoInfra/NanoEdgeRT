@@ -108,3 +108,12 @@ export function stopNanoEdgeRT(ac: AbortController): void {
   console.log("🛑 Stopping NanoEdgeRT...");
   ac.abort();
 }
+
+// ===================== Create a dummy instance for AppType export (used by hono-docs) =====================
+const coreSystemRoutes = new Hono()
+  .get("/health", (c) => c.json({ status: "ok" }))
+  .get("/status", (c) => c.json({ status: "ok" }))
+  .get("/openapi.json", (c) => c.json({ openapi: "3.0.0" }))
+  .get("/docs", (c) => c.html("<h1>API Documentation</h1>"));
+
+export type AppType = typeof coreSystemRoutes;

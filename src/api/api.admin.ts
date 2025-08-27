@@ -149,12 +149,11 @@ export function setupAdminAPIRoutes(
   app.use("*", databaseMiddleware(dbContext));
 
   app.post("/host-frontend", hostFrontendHandler);
-
-  setupAPIRoutes(app);
-  setupFunctionAPIRoutes(app);
-  setupTaskAPIRoutes(app);
-
-  // Frontend hosting API
+  app.route("/services", setupAPIRoutes());
+  app.route("/functions", setupFunctionAPIRoutes());
+  app.route("/tasks", setupTaskAPIRoutes());
 
   return app;
 }
+
+export type AppType = ReturnType<typeof setupAdminAPIRoutes>;

@@ -63,7 +63,7 @@ Deno.test("Integration: Admin API CRUD operations", async () => {
 
     // Test getting configuration
     const configResponse = await app.fetch(
-      new Request("http://localhost:8000/admin-api/v2/config", {
+      new Request("http://localhost:8000/admin-api/v2/services/config", {
         headers: {
           "Authorization": `Bearer ${mockToken}`,
         },
