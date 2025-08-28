@@ -52,9 +52,7 @@ export const newCommand = new Command()
       `${colors.brightYellow("💡 Example:")} ${
         colors.brightGreen("nanocli new service my_service")
       }\n\n` +
-      `${colors.brightYellow("📁 Location:")} ${
-        colors.dim("~/.nanovibe/projects/<NAME>")
-      }\n` +
+      `${colors.brightYellow("📁 Location:")} ${colors.dim("~/.nanovibe/projects/<NAME>")}\n` +
       `${colors.brightYellow("🔗 Source:")} ${
         colors.dim(
           "Clones template from GitHub and sets up project structure",
@@ -82,28 +80,8 @@ export const newCommand = new Command()
 
     const template = templates[type as keyof typeof templates];
     const projectsDir = getProjectsDirectory();
-    const projectPath = `${projectsDir}${
-      Deno.build.os === "windows" ? "\\" : "/"
-    }${name}`;
-
-    if (type === "function") {
-      await createFunctionProject(projectPath, name);
-    } else if (type === "stream-function") {
-      await createStreamFunctionProject(projectPath, name);
-    }
-
-    if (template === null) {
-      console.error(colors.red(`❌ No template available for type: ${type}`));
-      Deno.exit(1);
-    }
-
-    const tempPath = `${projectsDir}${
-      Deno.build.os === "windows" ? "\\" : "/"
-    }temp_${name}`;
-
-    if (type === "service") {
-      await handleServiceInit(tempPath, name);
-    }
+    const projectPath = `${projectsDir}${Deno.build.os === "windows" ? "\\" : "/"}${name}`;
+    const tempPath = `${projectsDir}${Deno.build.os === "windows" ? "\\" : "/"}temp_${name}`;
 
     try {
       // Create projects directory if it doesn't exist
@@ -127,32 +105,45 @@ export const newCommand = new Command()
         // Project doesn't exist, continue
       }
 
-      // Clone the template repository
-      console.log(
-        colors.dim(`📥 Cloning template from ${template.url}...`),
-      );
-      const cloneProcess = new Deno.Command("git", {
-        args: ["clone", template.url, tempPath],
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const cloneResult = await cloneProcess.output();
-      if (!cloneResult.success) {
-        const error = new TextDecoder().decode(cloneResult.stderr);
-        console.error(
-          colors.red(`❌ Failed to clone template: ${error}`),
-        );
+      if (type === "function") {
+        await createFunctionProject(projectPath, name);
+      } else if (type === "stream-function") {
+        await createStreamFunctionProject(projectPath, name);
+      } else if (template === null) {
+        console.error(colors.red(`❌ No template available for type: ${type}`));
         Deno.exit(1);
+      } else {
+        if (type === "service") {
+          await handleServiceInit(tempPath, name);
+        }
+
+        // Clone the template repository
+        console.log(
+          colors.dim(`📥 Cloning template from ${template.url}...`),
+        );
+        const cloneProcess = new Deno.Command("git", {
+          args: ["clone", template.url, tempPath],
+          stdout: "piped",
+          stderr: "piped",
+        });
+
+        const cloneResult = await cloneProcess.output();
+        if (!cloneResult.success) {
+          const error = new TextDecoder().decode(cloneResult.stderr);
+          console.error(
+            colors.red(`❌ Failed to clone template: ${error}`),
+          );
+          Deno.exit(1);
+        }
+
+        // Handle frontend-specific template replacements
+        console.log(colors.dim("🔧 Configuring MOCK"));
+        // TODO: Implement frontend-specific configuration if needed
+
+        // Rename the directory to the project name
+        console.log(colors.dim(`📦 Finalizing project structure...`));
+        await Deno.rename(tempPath, projectPath);
       }
-
-      // Handle frontend-specific template replacements
-      console.log(colors.dim("🔧 Configuring MOCK"));
-      // TODO: Implement frontend-specific configuration if needed
-
-      // Rename the directory to the project name
-      console.log(colors.dim(`📦 Finalizing project structure...`));
-      await Deno.rename(tempPath, projectPath);
 
       // Success message
       console.log(

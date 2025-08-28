@@ -42,6 +42,7 @@ export async function createOrLoadDatabase(
   dbPath: string,
   config: DbInitConfig = DEFAULT_DB_INIT_CONFIG,
 ): Promise<Kysely<Database>> {
+  console.log(`🗄️  Create or load database at ${dbPath}`);
   // Check if database file exists (excluding :memory:)
   let dbExists = false;
   if (dbPath !== ":memory:") {
@@ -91,7 +92,7 @@ export async function initializeDatabase(
   dbInstance: Kysely<Database>,
   config: DbInitConfig,
 ) {
-  console.log("🗄️ Initializing database...");
+  console.log("🗄️  Initializing database...");
 
   // Create config table
   await dbInstance.schema

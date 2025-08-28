@@ -33,7 +33,6 @@ export async function createNanoEdgeRT(
     : db;
   const queueBase = typeof queuedb === "string" ? await createOrLoadQueuebase(queuedb) : queuedb;
   queueExecutor(dbContext, queueBase, ac);
-
   const serviceManagerState = createServiceManagerState(dbContext);
   const startTime = new Date().toISOString();
   const app = new Hono();

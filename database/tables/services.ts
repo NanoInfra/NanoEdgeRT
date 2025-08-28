@@ -284,7 +284,7 @@ export async function getService(context: DatabaseContext, name: string): Promis
 export async function up(
   dbInstance: Kysely<Database>,
 ) {
-  console.log("Initializing services table...");
+  console.log("🗄️  Initializing services table...");
   // Create services table
   await dbInstance.schema
     .createTable("services")
