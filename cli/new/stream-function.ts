@@ -13,29 +13,74 @@ export async function createStreamFunctionProject(
     "imports": {},
   };
 
-  const entryTs = `
+  const entryTs = String.raw`
 import main from "./main.ts";
-Deno.serve({ port: 10001 }, async (req) => {
-  const json = await req.json();
-  const generator = main(json);
-  const stream = new ReadableStream({
+
+Deno.serve({ port: 10001 }, (req) => {
+  const url = new URL(req.url);
+  if (!(req.method === "POST" && url.pathname === "/stream")) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      while (true) {
-        const { done, value } = await generator.next();
-        if (done) {
-          controller.enqueue(
-            "data: [DONE]" + JSON.stringify(value) + "\\n\\n",
-          );
-          controller.close();
-          break;
-        } else {
-          controller.enqueue("data: " + JSON.stringify(value) + "\\n\\n");
+      const encoder = new TextEncoder();
+      const config = await req.json();
+      const generator = main(config);
+
+      let aborted = false;
+      const onAbort = () => {
+        aborted = true;
+        generator.throw?.(
+          new DOMException("Client aborted", "AbortError"),
+        ).catch(() => {});
+      };
+      req.signal.addEventListener("abort", onAbort, { once: true });
+
+      const send = (s: string) => {
+        if (aborted) return false;
+        try {
+          controller.enqueue(encoder.encode(s));
+          return true;
+        } catch (_e) {
+          aborted = true;
+          generator.throw?.(
+            new DOMException("Client aborted", "AbortError"),
+          ).catch(() => {});
+          return false;
         }
+      };
+
+      try {
+        while (!aborted) {
+          const { value, done } = await generator.next();
+
+          if (done) {
+            if (value !== undefined) {
+              send("event: return\ndata: " + JSON.stringify(value) + "\n\n");
+            }
+            send("data: [DONE]\n\n");
+            break;
+          } else {
+            if (!send("data: " + JSON.stringify(value) + "\n\n")) break;
+          }
+        }
+      } catch (err) {
+        console.error("!!! A fundamental error occurred in the stream:", err);
+      } finally {
+        req.signal.removeEventListener("abort", onAbort);
+        try { controller.close(); } catch {}
       }
     },
+    cancel() {},
   });
+
   return new Response(stream, {
-    headers: { "Content-Type": "text/event-stream" },
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
   });
 });
 `.trimStart();
